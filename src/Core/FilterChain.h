@@ -186,8 +186,8 @@ private:
     // Check if the main chain ends with a sink filter (no audio output)
     bool endsWithSinkFilter(const QList<int>& mutedPositions = QList<int>()) const;
 
-    // DAG infrastructure (Phase A)
-    bool isLinearChain(const QList<int>& mutedPositions) const;
+    // DAG infrastructure
+    bool useDAGPath(const QList<int>& mutedPositions) const;
     QString buildFilterFlagsDAG(const QList<int>& mutedPositions) const;
 
     std::vector<std::shared_ptr<BaseFilter>> filters;

@@ -483,8 +483,8 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
 QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
     if (filters.size() <= 2) return "";
 
-    // Phase A: DAG path for linear chains
-    if (isLinearChain(mutedPositions)) {
+    // DAG path for all chains except those containing AsplitFilter
+    if (useDAGPath(mutedPositions)) {
         return buildFilterFlagsDAG(mutedPositions);
     }
     
@@ -1168,28 +1168,11 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
 
 // ========== DAG Infrastructure (Phase A) ==========
 
-bool FilterChain::isLinearChain(const QList<int>& mutedPositions) const {
+bool FilterChain::useDAGPath(const QList<int>& mutedPositions) const {
+    // DAG handles everything except chains containing AsplitFilter (Phase C).
     for (size_t i = 1; i < filters.size() - 1; ++i) {
         if (mutedPositions.contains(static_cast<int>(i))) continue;
-
-        auto* f = filters[i].get();
-
-        if (dynamic_cast<AudioInputFilter*>(f))     return false;
-        if (dynamic_cast<MultiOutputFilter*>(f))     return false;
-        if (dynamic_cast<AuxOutputFilter*>(f))       return false;
-        if (dynamic_cast<FFShowwavespic*>(f))        return false;
-        if (dynamic_cast<FFAnullsink*>(f))           return false;
-        if (dynamic_cast<SmartAuxReturn*>(f))        return false;
-        if (dynamic_cast<FFAfir*>(f))                return false;
-        if (dynamic_cast<FFSidechaincompress*>(f))   return false;
-        if (dynamic_cast<FFSidechaingate*>(f))       return false;
-        if (dynamic_cast<FFAcrossfade*>(f))          return false;
-        if (dynamic_cast<FFAmerge*>(f))              return false;
-        if (dynamic_cast<FFAmix*>(f))                return false;
-        if (dynamic_cast<FFAxcorrelate*>(f))         return false;
-        if (dynamic_cast<FFJoin*>(f))                return false;
-        if (f->isAnalysisTwoInputFilter())           return false;
-        if (f->usesCustomOutputStream())             return false;
+        if (dynamic_cast<AsplitFilter*>(filters[i].get())) return false;
     }
     return true;
 }
