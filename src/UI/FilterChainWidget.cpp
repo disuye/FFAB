@@ -15,6 +15,7 @@
 #include "Filters/ff-amerge.h"
 #include "Filters/ff-join.h"
 #include "Filters/ff-amix.h"
+#include "Filters/ff-axcorrelate.h"
 #include "Filters/SmartAuxReturn.h"
 #include <QApplication>
 #include <QVBoxLayout>
@@ -1186,19 +1187,62 @@ QSet<int> FilterChainWidget::computeSoloProtectedFilters() const {
     return protectedIds;
 }
 
+static bool isMultiInputFilterType(BaseFilter* f) {
+    return dynamic_cast<FFAfir*>(f) ||
+           dynamic_cast<FFSidechaincompress*>(f) ||
+           dynamic_cast<FFSidechaingate*>(f) ||
+           dynamic_cast<FFAcrossfade*>(f) ||
+           dynamic_cast<FFAmerge*>(f) ||
+           dynamic_cast<FFAmix*>(f) ||
+           dynamic_cast<FFAxcorrelate*>(f) ||
+           dynamic_cast<FFJoin*>(f);
+}
+
 void FilterChainWidget::recomputeImpliedMutes() {
     impliedMuteSet.clear();
-    
+
     if (soloStates.isEmpty()) return;
-    
+
     QSet<int> protectedIds = computeSoloProtectedFilters();
-    
+
+    // Pass 1: Compute implied mutes — INPUT/OUTPUT always immune
     for (int i = 0; i < filterChain->filterCount(); ++i) {
         auto filter = filterChain->getFilter(i);
-        if (filter) {
-            int filterId = filter->getFilterId();
-            if (!protectedIds.contains(filterId)) {
-                impliedMuteSet.insert(filterId);
+        if (!filter) continue;
+
+        if (filter->getPosition() == BaseFilter::Position::INPUT ||
+            filter->getPosition() == BaseFilter::Position::OUTPUT) {
+            continue;
+        }
+
+        int filterId = filter->getFilterId();
+        if (!protectedIds.contains(filterId)) {
+            impliedMuteSet.insert(filterId);
+        }
+    }
+
+    // Pass 2: Grant solo-immunity to AudioInputFilters whose downstream
+    // multi-input consumer is active. AudioInputFilter is routing infrastructure
+    // that feeds sidechain data — only useful when its consumer is processing.
+    for (int i = 0; i < filterChain->filterCount(); ++i) {
+        auto filter = filterChain->getFilter(i);
+        if (!filter || !dynamic_cast<AudioInputFilter*>(filter.get())) continue;
+
+        int audioInputId = filter->getFilterId();
+        if (!impliedMuteSet.contains(audioInputId)) continue;
+
+        // Scan forward to find the downstream multi-input consumer
+        for (int j = i + 1; j < filterChain->filterCount(); ++j) {
+            auto downstream = filterChain->getFilter(j);
+            if (!downstream) continue;
+            if (isMultiInputFilterType(downstream.get())) {
+                int consumerId = downstream->getFilterId();
+                // Consumer is active → grant AudioInputFilter immunity
+                if (!impliedMuteSet.contains(consumerId) &&
+                    !explicitMuteStates.value(consumerId, false)) {
+                    impliedMuteSet.remove(audioInputId);
+                }
+                break;
             }
         }
     }
@@ -1314,24 +1358,36 @@ void FilterChainWidget::recomputeSubChainImpliedMutes() {
         recomputeImpliedMutes();
         return;
     }
-    
+
     QSet<int> subChainIds = getSubChainFilterIds();
-    
+
     for (int id : subChainIds) {
         impliedMuteSet.remove(id);
     }
-    
+
     QSet<int> soloedInSubChain;
     for (int id : subChainIds) {
         if (soloStates.value(id, false)) {
             soloedInSubChain.insert(id);
         }
     }
-    
+
     if (soloedInSubChain.isEmpty()) return;
-    
+
+    // Build set of solo-immune filter IDs (AudioInputFilter instances)
+    QSet<int> immuneIds;
+    auto* multiOutput = filterChain->getMultiOutputFilter(currentMultiOutputPos);
+    if (multiOutput) {
+        auto& subChain = multiOutput->getSubChain(currentStreamIndex);
+        for (const auto& filter : subChain) {
+            if (filter && dynamic_cast<AudioInputFilter*>(filter.get())) {
+                immuneIds.insert(filter->getFilterId());
+            }
+        }
+    }
+
     for (int id : subChainIds) {
-        if (!soloedInSubChain.contains(id)) {
+        if (!soloedInSubChain.contains(id) && !immuneIds.contains(id)) {
             impliedMuteSet.insert(id);
         }
     }
