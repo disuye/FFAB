@@ -59,6 +59,11 @@ public:
     // This allows multi-input filters to consume this output as a sidechain
     bool usesCustomOutputStream() const { return m_useCustomOutputStream; }
     void setCustomOutputStream(bool enabled) { m_useCustomOutputStream = enabled; }
+
+    // Effective mute state — stamped by FilterChainWidget before command building.
+    // Combines explicit mute, implied mute (from solo), and solo state.
+    bool isEffectivelyMuted() const { return m_effectivelyMuted; }
+    void setEffectivelyMuted(bool muted) { m_effectivelyMuted = muted; }
     
     // Complex routing flag for multi-input filters
     // When true, filter handles its own input label routing internally
@@ -79,4 +84,5 @@ protected:
     Position position = Position::MIDDLE;
     int m_filterId = -1;  // -1 = unassigned
     bool m_useCustomOutputStream = false;  // false = normal chain, true = branch to custom stream
+    bool m_effectivelyMuted = false;       // stamped before each build by FilterChainWidget
 };

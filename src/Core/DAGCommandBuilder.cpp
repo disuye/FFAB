@@ -297,6 +297,17 @@ QString DAGCommandBuilder::buildFilterFlags(
                         for (size_t j = 0; j < subChain.size(); j++) {
                             const auto& subFilter = subChain[j];
 
+                            // Skip muted sub-chain filters
+                            if (subFilter->isEffectivelyMuted()) {
+                                // If skipping a multi-input consumer, clear sidechain state
+                                // so downstream filters process the main stream, not the sidechain
+                                if (isMultiInputFilter(subFilter.get())) {
+                                    subCurrentAudioInput = nullptr;
+                                    subSidechainOutputs.clear();
+                                }
+                                continue;
+                            }
+
                             // AudioInputFilter — establishes sidechain context
                             if (auto* audioInput = dynamic_cast<AudioInputFilter*>(subFilter.get())) {
                                 subCurrentAudioInput = audioInput;

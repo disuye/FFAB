@@ -1610,14 +1610,31 @@ QList<int> FilterChainWidget::getMutedFilterPositions() const {
     QList<int> mutedPositions;
     for (int pos = 0; pos < filterChain->filterCount(); ++pos) {
         auto filter = filterChain->getFilter(pos);
-        if (filter) {
-            int filterId = filter->getFilterId();
-            bool explicitMuted = explicitMuteStates.value(filterId, false);
-            bool impliedMuted = impliedMuteSet.contains(filterId);
-            bool soloed = soloStates.value(filterId, false);
-            
-            if (!soloed && (explicitMuted || impliedMuted)) {
-                mutedPositions.append(pos);
+        if (!filter) continue;
+
+        int filterId = filter->getFilterId();
+        bool soloed = soloStates.value(filterId, false);
+        bool explicitMuted = explicitMuteStates.value(filterId, false);
+        bool impliedMuted = impliedMuteSet.contains(filterId);
+        bool effectivelyMuted = !soloed && (explicitMuted || impliedMuted);
+
+        filter->setEffectivelyMuted(effectivelyMuted);
+        if (effectivelyMuted) {
+            mutedPositions.append(pos);
+        }
+
+        // Stamp sub-chain filters for multi-output filters (AsplitFilter)
+        if (auto* multiOut = dynamic_cast<MultiOutputFilter*>(filter.get())) {
+            for (int s = 1; s <= multiOut->getNumOutputStreams(); s++) {
+                const auto& subChain = multiOut->getSubChain(s);
+                for (const auto& subFilter : subChain) {
+                    if (!subFilter) continue;
+                    int subId = subFilter->getFilterId();
+                    bool subSoloed = soloStates.value(subId, false);
+                    bool subExplicit = explicitMuteStates.value(subId, false);
+                    bool subImplied = impliedMuteSet.contains(subId);
+                    subFilter->setEffectivelyMuted(!subSoloed && (subExplicit || subImplied));
+                }
             }
         }
     }
