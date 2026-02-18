@@ -482,6 +482,11 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
 
 QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
     if (filters.size() <= 2) return "";
+
+    // Phase A: DAG path for linear chains
+    if (isLinearChain(mutedPositions)) {
+        return buildFilterFlagsDAG(mutedPositions);
+    }
     
     // Check if chain ends with a sink filter (no audio output)
     bool chainEndsWithSink = endsWithSinkFilter(mutedPositions);
@@ -1159,6 +1164,51 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
     }
 
     return filterStrs.join(";");
+}
+
+// ========== DAG Infrastructure (Phase A) ==========
+
+bool FilterChain::isLinearChain(const QList<int>& mutedPositions) const {
+    for (size_t i = 1; i < filters.size() - 1; ++i) {
+        if (mutedPositions.contains(static_cast<int>(i))) continue;
+
+        auto* f = filters[i].get();
+
+        if (dynamic_cast<AudioInputFilter*>(f))     return false;
+        if (dynamic_cast<MultiOutputFilter*>(f))     return false;
+        if (dynamic_cast<AuxOutputFilter*>(f))       return false;
+        if (dynamic_cast<FFShowwavespic*>(f))        return false;
+        if (dynamic_cast<FFAnullsink*>(f))           return false;
+        if (dynamic_cast<SmartAuxReturn*>(f))        return false;
+        if (dynamic_cast<FFAfir*>(f))                return false;
+        if (dynamic_cast<FFSidechaincompress*>(f))   return false;
+        if (dynamic_cast<FFSidechaingate*>(f))       return false;
+        if (dynamic_cast<FFAcrossfade*>(f))          return false;
+        if (dynamic_cast<FFAmerge*>(f))              return false;
+        if (dynamic_cast<FFAmix*>(f))                return false;
+        if (dynamic_cast<FFAxcorrelate*>(f))         return false;
+        if (dynamic_cast<FFJoin*>(f))                return false;
+        if (f->isAnalysisTwoInputFilter())           return false;
+        if (f->usesCustomOutputStream())             return false;
+    }
+    return true;
+}
+
+QString FilterChain::buildFilterFlagsDAG(const QList<int>& mutedPositions) const {
+    DAG::FilterGraph graph;
+    graph.buildLinearChain(filters);
+
+    QMap<int, int> nodeIdToPos;
+    for (size_t i = 0; i < filters.size(); ++i) {
+        nodeIdToPos[filters[i]->getFilterId()] = static_cast<int>(i);
+    }
+
+    auto hexFunc = [this](int filterId) -> QString {
+        return getFilterHexLabel(filterId);
+    };
+
+    return DAG::DAGCommandBuilder::buildFilterFlags(
+        graph, mutedPositions, nodeIdToPos, hexFunc);
 }
 
 QString FilterChain::buildAuxOutputPath(const QString& inputFile, AuxOutputFilter* auxOut, int auxIndex) const {

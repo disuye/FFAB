@@ -602,6 +602,12 @@ void MainWindow::connectAudioInputButtons(AudioInputFilter* audioInput) {
         audioInput->clearBtn->disconnect();
     }
     
+    // Disconnect and reconnect rescan signal
+    disconnect(fileListWidget, &FileListWidget::rescanRequested, nullptr, nullptr);
+    connect(fileListWidget, &FileListWidget::rescanRequested, [this, audioInput, fileListWidget]() {
+        onRescanAudioInputFileList(audioInput, fileListWidget);
+    });
+    
     // Add Folder button
     connect(audioInput->addFolderBtn, &QPushButton::clicked, [this, audioInput, fileListWidget]() {
         QString defaultPath = Preferences::instance().lastAudioInputDirectory();

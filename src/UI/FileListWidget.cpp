@@ -90,7 +90,8 @@ void FileListWidget::addFile(const AudioFileInfo& fileInfo) {
 void FileListWidget::addFiles(const QList<AudioFileInfo>& newFiles) {
     if (newFiles.isEmpty()) return;
     
-    // Batch UI updates for performance
+    // Disable sorting and updates during batch add
+    tableWidget->setSortingEnabled(false);  // ADD THIS
     tableWidget->setUpdatesEnabled(false);
     
     int startIndex = files.size();
@@ -99,12 +100,13 @@ void FileListWidget::addFiles(const QList<AudioFileInfo>& newFiles) {
     // Pre-allocate rows
     tableWidget->setRowCount(files.size());
     
-    // Add only the new rows (O(n) for new files, not O(n²))
+    // Add only the new rows
     for (int i = startIndex; i < files.size(); ++i) {
         populateSingleRow(i);
     }
     
     tableWidget->setUpdatesEnabled(true);
+    tableWidget->setSortingEnabled(true);  // ADD THIS - re-enable after population
 }
 
 void FileListWidget::clearFiles() {
@@ -280,6 +282,7 @@ void FileListWidget::populateSingleRow(int i) {
 }
 
 void FileListWidget::populateTable() {
+    tableWidget->setSortingEnabled(false);  // ADD THIS
     tableWidget->setUpdatesEnabled(false);
     tableWidget->setRowCount(files.size());
     
@@ -288,6 +291,7 @@ void FileListWidget::populateTable() {
     }
     
     tableWidget->setUpdatesEnabled(true);
+    tableWidget->setSortingEnabled(true);  // ADD THIS
 }
 
 QList<FileListWidget::AudioFileInfo> FileListWidget::getEnabledFiles() const {

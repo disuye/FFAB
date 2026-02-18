@@ -52,6 +52,13 @@ add_executable(FFAB
     src/Core/JobListBuilder.cpp
     src/Core/LogFileWriter.h
     src/Core/LogFileWriter.cpp
+    src/Core/Port.h
+    src/Core/Connection.h
+    src/Core/FilterNode.h
+    src/Core/FilterGraph.h
+    src/Core/FilterGraph.cpp
+    src/Core/DAGCommandBuilder.h
+    src/Core/DAGCommandBuilder.cpp
 
     # Filters (Structural)
     src/Filters/BaseFilter.h

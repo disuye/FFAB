@@ -4,7 +4,9 @@
 #include <QWidget>
 #include <QObject>
 #include <memory>
+#include <vector>
 #include <QJsonObject>
+#include "Core/Port.h"
 
 /**
  * FFAB Filter Naming Conventions:
@@ -63,6 +65,15 @@ public:
     // (e.g., AFIR with amix splits [0:a] internally and only needs [N:a] for IR)
     // Command builder will prepend mainChainInput but NOT all sidechain inputs
     virtual bool handlesOwnInputRouting() const { return false; }
+
+    // DAG port declarations — override in filters with non-standard topology
+    // Default: 1 main audio input, 1 main audio output (simple 1→1 filter)
+    virtual std::vector<DAG::PortDescriptor> inputPorts() const {
+        return { DAG::mainInput() };
+    }
+    virtual std::vector<DAG::PortDescriptor> outputPorts() const {
+        return { DAG::mainOutput() };
+    }
 
 protected:
     Position position = Position::MIDDLE;
