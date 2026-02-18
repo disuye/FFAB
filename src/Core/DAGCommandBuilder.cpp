@@ -20,6 +20,33 @@
 
 namespace DAG {
 
+// ================================================================
+// Shared helpers (used by main loop and AsplitFilter sub-chain loop)
+// ================================================================
+
+// Classify multi-input filters
+static bool isMultiInputFilter(BaseFilter* f) {
+    return dynamic_cast<FFAfir*>(f) ||
+           dynamic_cast<FFSidechaincompress*>(f) ||
+           dynamic_cast<FFSidechaingate*>(f) ||
+           dynamic_cast<FFAcrossfade*>(f) ||
+           dynamic_cast<FFAmerge*>(f) ||
+           dynamic_cast<FFAmix*>(f) ||
+           dynamic_cast<FFAxcorrelate*>(f) ||
+           dynamic_cast<FFJoin*>(f);
+}
+
+// Strip trailing output label [xxx] after last = or :
+static void stripTrailingOutputLabel(QString& filterStr) {
+    int lastParam = qMax(filterStr.lastIndexOf('='), filterStr.lastIndexOf(':'));
+    if (lastParam != -1) {
+        int outputLabelStart = filterStr.indexOf('[', lastParam);
+        if (outputLabelStart != -1) {
+            filterStr = filterStr.left(outputLabelStart);
+        }
+    }
+}
+
 QString DAGCommandBuilder::buildFilterFlags(
     const FilterGraph& graph,
     const QList<int>& mutedPositions,
@@ -215,10 +242,217 @@ QString DAGCommandBuilder::buildFilterFlags(
         }
 
         // ============================================================
-        // CASE 3: AsplitFilter — safety guard (Phase C)
-        // useDAGPath() should have excluded chains with AsplitFilter.
+        // CASE 3: AsplitFilter — split into parallel streams with sub-chains
         // ============================================================
-        if (dynamic_cast<AsplitFilter*>(rawFilter)) {
+        if (auto* asplitFilter = dynamic_cast<AsplitFilter*>(rawFilter)) {
+            int filterId = rawFilter->getFilterId();
+            QString hexId = hexLabelFunc(filterId);
+            int numSplits = asplitFilter->numSplits();
+            int totalStreams = numSplits + 1;  // thru + parallel streams
+
+            bool isLastFilter = !hasFiltersAfter(i);
+
+            // Generate asplit command: [input]asplit=N[thru][s1][s2]...
+            QString thruLabel = QString("[%1_thru]").arg(hexId);
+            QString asplitCmd = QString("%1asplit=%2%3")
+                .arg(mainChainInput)
+                .arg(totalStreams)
+                .arg(thruLabel);
+
+            QStringList streamLabels;
+            for (int s = 1; s <= numSplits; s++) {
+                QString label = QString("[%1_s%2]").arg(hexId).arg(s);
+                asplitCmd += label;
+                streamLabels << label;
+            }
+            filterStrs.append(asplitCmd);
+
+            // Process each sub-chain, collect outputs for mixing
+            QStringList mixInputs;
+            QStringList mixWeights;
+
+            // Thru (stream 0) goes directly to mix
+            mixInputs << thruLabel;
+            mixWeights << QString::number(asplitFilter->getStreamWeight(0), 'f', 4);
+
+            for (int s = 1; s <= numSplits; s++) {
+                QString currentInput_sub = streamLabels[s - 1];
+                bool isStreamMuted = asplitFilter->isStreamMuted(s);
+
+                if (isStreamMuted) {
+                    // Muted stream: skip sub-chain, use raw stream with weight 0
+                    mixInputs << currentInput_sub;
+                    mixWeights << "0";
+                } else {
+                    const auto& subChain = asplitFilter->getSubChain(s);
+
+                    if (subChain.empty()) {
+                        // No processing on this stream, goes directly to mix
+                        mixInputs << currentInput_sub;
+                    } else {
+                        // Process sub-chain filters with sidechain awareness
+                        AudioInputFilter* subCurrentAudioInput = nullptr;
+                        QMap<int, QString> subSidechainOutputs;
+
+                        for (size_t j = 0; j < subChain.size(); j++) {
+                            const auto& subFilter = subChain[j];
+
+                            // AudioInputFilter — establishes sidechain context
+                            if (auto* audioInput = dynamic_cast<AudioInputFilter*>(subFilter.get())) {
+                                subCurrentAudioInput = audioInput;
+                                int idx = audioInput->getInputIndex();
+                                subSidechainOutputs[idx] = QString("[%1:a]").arg(idx);
+                                continue;
+                            }
+
+                            QString subFilterStr = subFilter->buildFFmpegFlags();
+                            if (subFilterStr.isEmpty()) continue;
+
+                            int subFilterId = subFilter->getFilterId();
+                            QString subHexId = hexLabelFunc(subFilterId);
+                            QString subOutputLabel = QString("[%1_s%2_%3]")
+                                .arg(hexId).arg(s).arg(subHexId);
+
+                            bool subIsAnalysisTwoInput = subFilter->isAnalysisTwoInputFilter();
+                            bool subIsMultiInput = isMultiInputFilter(subFilter.get());
+                            bool subIsInsertMode = (subCurrentAudioInput != nullptr &&
+                                                    !subIsAnalysisTwoInput &&
+                                                    !subIsMultiInput);
+
+                            if (subIsInsertMode) {
+                                // INSERT MODE: wire filter onto the sidechain path
+                                int idx = subCurrentAudioInput->getInputIndex();
+                                QString inputLabel = subSidechainOutputs[idx];
+
+                                bool hasInputLabels = subFilterStr.contains(QRegularExpression("^\\["));
+                                if (!hasInputLabels) {
+                                    subFilterStr = inputLabel + subFilterStr;
+                                }
+
+                                stripTrailingOutputLabel(subFilterStr);
+                                subFilterStr += subOutputLabel;
+                                subSidechainOutputs[idx] = subOutputLabel;
+
+                                filterStrs.append(subFilterStr);
+                            }
+                            else if (subIsAnalysisTwoInput) {
+                                // ANALYSIS TWO-INPUT: [subChainStream][sidechain]filter[output]
+                                QString scLabel;
+                                if (!subSidechainOutputs.isEmpty()) {
+                                    QList<int> scKeys = subSidechainOutputs.keys();
+                                    std::sort(scKeys.begin(), scKeys.end());
+                                    scLabel = subSidechainOutputs[scKeys.last()];
+                                } else if (!sidechainOutputs.isEmpty()) {
+                                    // Fall back to main chain sidechain state
+                                    QList<int> scKeys = sidechainOutputs.keys();
+                                    std::sort(scKeys.begin(), scKeys.end());
+                                    scLabel = sidechainOutputs[scKeys.last()];
+                                } else {
+                                    scLabel = "[1:a]";
+                                }
+
+                                subFilterStr = currentInput_sub + scLabel + subFilterStr + subOutputLabel;
+                                filterStrs.append(subFilterStr);
+                                currentInput_sub = subOutputLabel;
+                            }
+                            else if (subIsMultiInput) {
+                                // MULTI-INPUT in sub-chain
+                                if (subFilter->handlesOwnInputRouting()) {
+                                    // Sub-case A: filter manages its own input routing (AFIR with amix/apad)
+                                    // Replace [0:a] inline, replace [N:a] with sidechain outputs
+                                    static QRegularExpression startsWithMainInput(R"(^\[0:a\])");
+                                    if (startsWithMainInput.match(subFilterStr).hasMatch()) {
+                                        subFilterStr.replace(QRegularExpression(R"(^\[0:a\])"), currentInput_sub);
+                                    } else if (!subFilterStr.startsWith('[')) {
+                                        subFilterStr = currentInput_sub + subFilterStr;
+                                    }
+
+                                    for (auto it = subSidechainOutputs.constBegin();
+                                         it != subSidechainOutputs.constEnd(); ++it) {
+                                        int idx = it.key();
+                                        QString rawLabel = QString("[%1:a]").arg(idx);
+                                        QString processedLabel = it.value();
+                                        if (processedLabel != rawLabel) {
+                                            subFilterStr.replace(rawLabel, processedLabel);
+                                        }
+                                    }
+                                } else {
+                                    // Sub-case B: standard multi-input — strip and rebuild input labels
+                                    static QRegularExpression leadingInputLabels(R"(^(\[\d+:a\])+)");
+                                    QRegularExpressionMatch inputLabelMatch = leadingInputLabels.match(subFilterStr);
+
+                                    if (inputLabelMatch.hasMatch()) {
+                                        subFilterStr = subFilterStr.mid(inputLabelMatch.capturedLength());
+                                        QString inputPrefix = currentInput_sub;
+                                        QList<int> scKeys = subSidechainOutputs.keys();
+                                        std::sort(scKeys.begin(), scKeys.end());
+                                        for (int key : scKeys) {
+                                            inputPrefix += subSidechainOutputs[key];
+                                        }
+                                        subFilterStr = inputPrefix + subFilterStr;
+                                    } else {
+                                        for (auto it = subSidechainOutputs.constBegin();
+                                             it != subSidechainOutputs.constEnd(); ++it) {
+                                            int idx = it.key();
+                                            QString rawLabel = QString("[%1:a]").arg(idx);
+                                            QString processedLabel = it.value();
+                                            if (processedLabel != rawLabel) {
+                                                subFilterStr.replace(rawLabel, processedLabel);
+                                            }
+                                        }
+                                        if (!subFilterStr.contains(currentInput_sub)) {
+                                            subFilterStr.replace("[0:a]", currentInput_sub);
+                                        }
+                                    }
+                                }
+
+                                stripTrailingOutputLabel(subFilterStr);
+                                subFilterStr += subOutputLabel;
+                                filterStrs.append(subFilterStr);
+                                currentInput_sub = subOutputLabel;
+
+                                subCurrentAudioInput = nullptr;
+                                subSidechainOutputs.clear();
+                            }
+                            else {
+                                // NORMAL FILTER: wire onto sub-chain stream
+                                bool hasInputLabels = subFilterStr.contains(QRegularExpression("^\\["));
+                                if (!hasInputLabels) {
+                                    subFilterStr = currentInput_sub + subFilterStr;
+                                } else {
+                                    subFilterStr.replace("[0:a]", currentInput_sub);
+                                }
+
+                                stripTrailingOutputLabel(subFilterStr);
+                                subFilterStr += subOutputLabel;
+                                filterStrs.append(subFilterStr);
+                                currentInput_sub = subOutputLabel;
+                            }
+                        }
+                        mixInputs << currentInput_sub;  // Final sub-chain output
+                    }
+                    mixWeights << QString::number(asplitFilter->getStreamWeight(s), 'f', 4);
+                }
+            }
+
+            // Generate amix recombination (if auto amix enabled)
+            if (asplitFilter->useAutoAmix()) {
+                QString mixOutput = isLastFilter ? "[out]" : QString("[%1]").arg(hexId);
+                QString amixCmd = mixInputs.join("") +
+                    QString("amix=inputs=%1:weights=%2:duration=longest:dropout_transition=0:normalize=0%3")
+                        .arg(mixInputs.size())
+                        .arg(mixWeights.join(" "))
+                        .arg(mixOutput);
+                filterStrs.append(amixCmd);
+                mainChainInput = mixOutput;
+            } else {
+                // Manual routing: thru stream becomes main chain
+                mainChainInput = thruLabel;
+            }
+
+            // Clear sidechain state after asplit block
+            currentAudioInput = nullptr;
+            sidechainOutputs.clear();
             continue;
         }
 
@@ -253,19 +487,11 @@ QString DAGCommandBuilder::buildFilterFlags(
         // ============================================================
         // Classify the filter
         // ============================================================
-        bool isMultiInputFilter = (dynamic_cast<FFAfir*>(rawFilter) ||
-                                   dynamic_cast<FFSidechaincompress*>(rawFilter) ||
-                                   dynamic_cast<FFSidechaingate*>(rawFilter) ||
-                                   dynamic_cast<FFAcrossfade*>(rawFilter) ||
-                                   dynamic_cast<FFAmerge*>(rawFilter) ||
-                                   dynamic_cast<FFAmix*>(rawFilter) ||
-                                   dynamic_cast<FFAxcorrelate*>(rawFilter) ||
-                                   dynamic_cast<FFJoin*>(rawFilter));
-
+        bool isMultiInput = isMultiInputFilter(rawFilter);
         bool isSmartAuxReturn = (dynamic_cast<SmartAuxReturn*>(rawFilter) != nullptr);
         bool isAnalysisTwoInput = rawFilter->isAnalysisTwoInputFilter();
         bool isInInsertMode = (currentAudioInput != nullptr &&
-                               !isMultiInputFilter &&
+                               !isMultiInput &&
                                !isSmartAuxReturn &&
                                !isAnalysisTwoInput);
 
@@ -289,13 +515,7 @@ QString DAGCommandBuilder::buildFilterFlags(
             }
 
             if (!manualLabels) {
-                int lastParam = qMax(filterStr.lastIndexOf('='), filterStr.lastIndexOf(':'));
-                if (lastParam != -1) {
-                    int outputLabelStart = filterStr.indexOf('[', lastParam);
-                    if (outputLabelStart != -1) {
-                        filterStr = filterStr.left(outputLabelStart);
-                    }
-                }
+                stripTrailingOutputLabel(filterStr);
                 filterStr += outputLabel;
                 sidechainOutputs[idx] = outputLabel;
             }
@@ -357,7 +577,7 @@ QString DAGCommandBuilder::buildFilterFlags(
         // ============================================================
         // CASE 8: Multi-input filter
         // ============================================================
-        else if (isMultiInputFilter) {
+        else if (isMultiInput) {
             if (rawFilter->handlesOwnInputRouting()) {
                 // Sub-case A: filter manages its own input routing (AFIR with amix/apad)
                 static QRegularExpression startsWithMainInput(R"(^\[0:a\])");
@@ -421,13 +641,7 @@ QString DAGCommandBuilder::buildFilterFlags(
             }
 
             if (!manualLabels) {
-                int lastParam = qMax(filterStr.lastIndexOf('='), filterStr.lastIndexOf(':'));
-                if (lastParam != -1) {
-                    int outputLabelStart = filterStr.indexOf('[', lastParam);
-                    if (outputLabelStart != -1) {
-                        filterStr = filterStr.left(outputLabelStart);
-                    }
-                }
+                stripTrailingOutputLabel(filterStr);
                 filterStr += outputLabel;
                 if (!usesCustomOutput) {
                     mainChainInput = outputLabel;
@@ -505,13 +719,7 @@ QString DAGCommandBuilder::buildFilterFlags(
             }
 
             if (!manualLabels) {
-                int lastParam = qMax(filterStr.lastIndexOf('='), filterStr.lastIndexOf(':'));
-                if (lastParam != -1) {
-                    int outputLabelStart = filterStr.indexOf('[', lastParam);
-                    if (outputLabelStart != -1) {
-                        filterStr = filterStr.left(outputLabelStart);
-                    }
-                }
+                stripTrailingOutputLabel(filterStr);
                 filterStr += outputLabel;
                 if (!usesCustomOutput && !isLastFilter) {
                     mainChainInput = outputLabel;

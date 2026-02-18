@@ -1168,13 +1168,8 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
 
 // ========== DAG Infrastructure (Phase A) ==========
 
-bool FilterChain::useDAGPath(const QList<int>& mutedPositions) const {
-    // DAG handles everything except chains containing AsplitFilter (Phase C).
-    for (size_t i = 1; i < filters.size() - 1; ++i) {
-        if (mutedPositions.contains(static_cast<int>(i))) continue;
-        if (dynamic_cast<AsplitFilter*>(filters[i].get())) return false;
-    }
-    return true;
+bool FilterChain::useDAGPath(const QList<int>& /*mutedPositions*/) const {
+    return true;  // Phase C complete: DAG handles all filter types
 }
 
 QString FilterChain::buildFilterFlagsDAG(const QList<int>& mutedPositions) const {
