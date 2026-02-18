@@ -1,0 +1,53 @@
+# FFAB-license.txt
+# Note: FFAB is free / donationware
+# License:
+
+-----------------------------------------------------------
+FFAB - FFmpeg Audio Batch Processor
+Copyright (c) 2025 Dan Findlay / @disuye 
+All rights reserved.
+https://www.disuye.com
+-----------------------------------------------------------
+
+LICENSE
+
+FFAB is free software provided at no cost (donationware). You may use FFAB for any personal, educational, or commercial purpose without restriction. You may freely share unmodified copies of FFAB with others.
+
+If you enjoy FFAB, please consider supporting the developer by buying some music:
+
+https://dan-f.bandcamp.com
+https://smplr.bandcamp.com
+https://dyscopian.bandcamp.com
+
+Please download FFAB from the official repository only:
+
+https://github.com/disuye
+
+Redistribution of FFAB through package managers, app stores, software bundling, or mirror sites is not permitted without prior written consent from the author. This ensures that the author has come clue about download numbers, and that users always receive the latest version.
+
+You may not sell FFAB or charge for its distribution.
+
+You may not distribute modified versions of FFAB.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+THIRD-PARTY LICENSES
+
+Qt Framework
+  FFAB uses the Qt Toolkit (https://www.qt.io) under the terms of the
+  GNU Lesser General Public License v3 (LGPLv3). Qt is dynamically
+  linked and is not modified. The Qt source code is available at:
+  https://download.qt.io/official_releases/qt/
+  See LGPLv3.txt and GPLv3.txt for the full license texts.
+
+Fira Code Font
+  FFAB includes the Fira Code font by The Fira Code Project Authors
+  (https://github.com/tonsky/FiraCode), licensed under the
+  SIL Open Font License v1.1. See FiraCode-OFL.txt for the full
+  license text.
+
+FFmpeg
+  FFAB does not bundle FFmpeg. FFmpeg is downloaded separately at the
+  user's request from third-party static build providers. FFmpeg is
+  licensed under the GNU Lesser General Public License v2.1 or later.
+  See https://ffmpeg.org/legal.html for details.

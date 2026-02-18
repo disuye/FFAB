@@ -1,0 +1,15 @@
+#IGNORE...
+*.DS_Store
+build*/
+construction*/
+versions*/
+docs*/
+Claude*
+CLAUDE*
+stubs/
+notes/
+._*
+*.tar.gz
+*.zip
+
+# EXCEPTIONS...

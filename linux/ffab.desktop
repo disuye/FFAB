@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=FFAB
+Comment=FFmpeg Audio Batch Processor
+Exec=FFAB
+Icon=ffab
+Categories=Audio;AudioVideo;
+MimeType=audio/mpeg;audio/flac;audio/wav;audio/ogg;audio/aiff;
+Terminal=false
