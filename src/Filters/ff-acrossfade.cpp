@@ -178,10 +178,13 @@ void FFAcrossfade::updateFFmpegFlags() {
         params << QString("c2=%1").arg(m_curve2);
     }
     
+    int scIdx = (m_sidechainInputIndex >= 0) ? m_sidechainInputIndex : 1;
+    QString inputLabels = QString("[0:a][%1:a]").arg(scIdx);
+
     if (params.isEmpty()) {
-        ffmpegFlags = "acrossfade";
+        ffmpegFlags = inputLabels + "acrossfade";
     } else {
-        ffmpegFlags = "acrossfade=" + params.join(":");
+        ffmpegFlags = inputLabels + "acrossfade=" + params.join(":");
     }
 }
 

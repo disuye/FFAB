@@ -156,10 +156,15 @@ QWidget* FFJoin::getParametersWidget() {
 }
 
 void FFJoin::updateFFmpegFlags() {
-    ffmpegFlags = QString("join=inputs=%1:channel_layout=%2")
+    QString inputLabels;
+    for (int i = 0; i < m_inputs; i++) {
+        inputLabels += QString("[%1:a]").arg(i);
+    }
+
+    ffmpegFlags = inputLabels + QString("join=inputs=%1:channel_layout=%2")
                       .arg(m_inputs)
                       .arg(m_channelLayout);
-    
+
     if (!m_map.isEmpty()) {
         ffmpegFlags += QString(":map=%1").arg(m_map);
     }

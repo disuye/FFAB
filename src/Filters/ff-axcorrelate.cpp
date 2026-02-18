@@ -164,7 +164,7 @@ void FFAxcorrelate::updateFFmpegFlags() {
     QStringList algoNames = {"slow", "fast", "best"};
     QString algoName = (m_algo >= 0 && m_algo < algoNames.size()) ? algoNames[m_algo] : "best";
     
-    ffmpegFlags = QString("axcorrelate=size=%1:algo=%2")
+    ffmpegFlags = QString("[0:a][1:a]axcorrelate=size=%1:algo=%2")
                       .arg(m_size)
                       .arg(algoName);
 }

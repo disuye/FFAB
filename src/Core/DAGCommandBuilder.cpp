@@ -393,12 +393,21 @@ QString DAGCommandBuilder::buildFilterFlags(
                                     QRegularExpressionMatch inputLabelMatch = leadingInputLabels.match(subFilterStr);
 
                                     if (inputLabelMatch.hasMatch()) {
+                                        static QRegularExpression labelCounter(R"(\[\d+:a\])");
+                                        int declaredInputCount = 0;
+                                        QRegularExpressionMatchIterator labelIt = labelCounter.globalMatch(inputLabelMatch.captured(0));
+                                        while (labelIt.hasNext()) { labelIt.next(); declaredInputCount++; }
+                                        int scSlotsAvailable = declaredInputCount - 1;
+
                                         subFilterStr = subFilterStr.mid(inputLabelMatch.capturedLength());
                                         QString inputPrefix = currentInput_sub;
                                         QList<int> scKeys = subSidechainOutputs.keys();
                                         std::sort(scKeys.begin(), scKeys.end());
+                                        int scUsed = 0;
                                         for (int key : scKeys) {
+                                            if (scUsed >= scSlotsAvailable) break;
                                             inputPrefix += subSidechainOutputs[key];
+                                            scUsed++;
                                         }
                                         subFilterStr = inputPrefix + subFilterStr;
                                     } else {
@@ -613,12 +622,22 @@ QString DAGCommandBuilder::buildFilterFlags(
                 QRegularExpressionMatch inputLabelMatch = leadingInputLabels.match(filterStr);
 
                 if (inputLabelMatch.hasMatch()) {
+                    // Count how many input labels the filter declared
+                    static QRegularExpression labelCounter(R"(\[\d+:a\])");
+                    int declaredInputCount = 0;
+                    QRegularExpressionMatchIterator labelIt = labelCounter.globalMatch(inputLabelMatch.captured(0));
+                    while (labelIt.hasNext()) { labelIt.next(); declaredInputCount++; }
+                    int scSlotsAvailable = declaredInputCount - 1;  // -1 for main chain
+
                     filterStr = filterStr.mid(inputLabelMatch.capturedLength());
                     QString inputPrefix = mainChainInput;
                     QList<int> scKeys = sidechainOutputs.keys();
                     std::sort(scKeys.begin(), scKeys.end());
+                    int scUsed = 0;
                     for (int key : scKeys) {
+                        if (scUsed >= scSlotsAvailable) break;
                         inputPrefix += sidechainOutputs[key];
+                        scUsed++;
                     }
                     filterStr = inputPrefix + filterStr;
                 } else {
