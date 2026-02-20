@@ -45,7 +45,7 @@ private:
 
     static SemVer parseSemVer(const QString& versionStr);
     static bool isNewer(const SemVer& remote, const SemVer& local);
-    QString platformAssetSuffix() const;
+    QString platformAssetKeyword() const;
 
     void loadCache();
     void saveCache();

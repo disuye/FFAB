@@ -91,9 +91,17 @@ bool UpdateChecker::isNewer(const SemVer& remote, const SemVer& local) {
     return remote.patch > local.patch;
 }
 
-QString UpdateChecker::platformAssetSuffix() const {
-#ifdef Q_OS_MACOS
+QString UpdateChecker::platformAssetKeyword() const {
+#if defined(Q_OS_MACOS)
     return ".dmg";
+#elif defined(Q_OS_WINDOWS) && defined(Q_PROCESSOR_ARM_64)
+    return "windows-arm64";
+#elif defined(Q_OS_WINDOWS) && defined(Q_PROCESSOR_X86_64)
+    return "windows-x86_64";
+#elif defined(Q_OS_LINUX) && defined(Q_PROCESSOR_ARM_64)
+    return "linux-arm64";
+#elif defined(Q_OS_LINUX) && defined(Q_PROCESSOR_X86_64)
+    return "linux-x86_64";
 #else
     return ".zip";
 #endif
@@ -159,12 +167,12 @@ void UpdateChecker::onApiReplyFinished() {
     m_downloadUrl.clear();
 
     // Find platform-specific asset
-    QString suffix = platformAssetSuffix();
+    QString keyword = platformAssetKeyword();
     QJsonArray assets = release["assets"].toArray();
     for (const QJsonValue& val : assets) {
         QJsonObject asset = val.toObject();
         QString name = asset["name"].toString();
-        if (name.endsWith(suffix, Qt::CaseInsensitive)) {
+        if (name.contains(keyword, Qt::CaseInsensitive)) {
             m_downloadUrl = asset["browser_download_url"].toString();
             break;
         }
