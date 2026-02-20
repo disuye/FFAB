@@ -159,7 +159,6 @@ private:
 
     // Update checker
     UpdateChecker* m_updateChecker = nullptr;
-    QToolButton*   m_updateIcon = nullptr;
     QLabel*        m_updateLabel = nullptr;
 
     // Helper

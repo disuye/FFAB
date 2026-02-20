@@ -81,13 +81,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     // Update checker signals
     connect(m_updateChecker, &UpdateChecker::checkFinished, this, [this](bool available) {
-        m_updateIcon->setVisible(available);
         m_updateLabel->setVisible(available);
         if (available) {
             m_updateLabel->setText(
-                QString("<a style='color: #FF5500; text-decoration: none;' href='#'>"
-                        "Version %1 available now | Current %2</a>")
-                    .arg(m_updateChecker->latestVersion(), VERSION_STR));
+                QString("<a style='background-color: rgba(255, 85, 0, 0.1); color: #FF5500; text-decoration: none; border: 4px solid rgba(255, 85, 0, 0.1); border-radius: 2px;' href='#'>"
+                        "Update Available</a>"));
         }
     });
 
@@ -96,10 +94,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         dialog.setCurrentTab(3);
         if (dialog.exec() == QDialog::Accepted) {
             checkFFmpegAvailability();
+            m_updateLabel->setVisible(false);
         }
     };
-
-    connect(m_updateIcon, &QToolButton::clicked, this, openUpdatesTab);
+    
     connect(m_updateLabel, &QLabel::linkActivated, this, openUpdatesTab);
 
     // Check for updates on startup (respects 7-day cache)
@@ -294,20 +292,8 @@ void MainWindow::setupUI() {
     scanProgressBar->setVisible(false);
     bottomLayout->addWidget(scanProgressBar, 1);
     
-    // Update available icon (hidden by default)
-    m_updateIcon = new QToolButton();
-    m_updateIcon->setIcon(style()->standardIcon(QStyle::SP_MessageBoxInformation));
-    m_updateIcon->setIconSize(QSize(14, 14));
-    m_updateIcon->setFixedSize(18, 18);
-    m_updateIcon->setStyleSheet(
-        "QToolButton { border: none; background: transparent; }"
-        "QToolButton:hover { background: rgba(128,128,128,0.2); border-radius: 2px; }");
-    m_updateIcon->setCursor(Qt::PointingHandCursor);
-    m_updateIcon->setVisible(false);
-    bottomLayout->addWidget(m_updateIcon, 0);
-
     m_updateLabel = new QLabel("");
-    m_updateLabel->setStyleSheet("QLabel { font-size: 10px; color: #808080; }");
+    m_updateLabel->setStyleSheet("QLabel { font-size: 10px; }");
     m_updateLabel->setCursor(Qt::PointingHandCursor);
     m_updateLabel->setVisible(false);
     bottomLayout->addWidget(m_updateLabel, 0);

@@ -266,9 +266,7 @@ SettingsDialog::SettingsDialog(QWidget* parent, UpdateChecker* checker)
 
     // --- Manual link ---
     auto* manualLink = new QLabel(
-        QString("<small>Or manually click this "
-        "<a style='color: %1' href='https://github.com/disuye/FFAB-releases/releases/latest'>link</a>"
-        " to visit the Github page</small>").arg(LINK_COLOR));
+        QString("<small>Or manually click this link to visit the Github page</small><br><a style='color: %1' href='https://github.com/disuye/FFAB-releases/releases/latest'>https://github.com/disuye/FFAB-releases/releases/latest</a>").arg(LINK_COLOR));
     manualLink->setOpenExternalLinks(true);
     manualLink->setStyleSheet("color: #808080;");
     manualLink->setWordWrap(true);
@@ -337,7 +335,7 @@ SettingsDialog::SettingsDialog(QWidget* parent, UpdateChecker* checker)
             m_downloadNowBtn->setEnabled(available && !m_updateChecker->downloadUrl().isEmpty());
             if (available) {
                 m_updateStatusLabel->setText(
-                    QString("Version %1 available now | Current %2")
+                    QString("Update Available...\nLatest version = %1\nThis version = v%2")
                         .arg(m_updateChecker->latestVersion(), VERSION_STR));
             } else {
                 m_updateStatusLabel->setText("You are running the latest version.");
