@@ -5,6 +5,7 @@
 #include "SmartAuxReturn.h"
 #include "MultiOutputFilter.h"
 #include "ff-showwavespic.h"
+#include "ff-showspectrumpic.h"
 #include "ff-anullsink.h"
 #include "ff-afir.h"
 #include "ff-sidechaincompress.h"
@@ -23,6 +24,12 @@ namespace DAG {
 // ================================================================
 // Shared helpers (used by main loop and AsplitFilter sub-chain loop)
 // ================================================================
+
+// Classify image output filters (branch via asplit, produce image file)
+static bool isImageOutputFilter(BaseFilter* f) {
+    return dynamic_cast<FFShowwavespic*>(f) ||
+           dynamic_cast<FFShowspectrumpic*>(f);
+}
 
 // Classify multi-input filters
 static bool isMultiInputFilter(BaseFilter* f) {
@@ -78,7 +85,7 @@ QString DAGCommandBuilder::buildFilterFlags(
             BaseFilter* f = n->filter.get();
 
             if (dynamic_cast<AuxOutputFilter*>(f) ||
-                dynamic_cast<FFShowwavespic*>(f) ||
+                isImageOutputFilter(f) ||
                 dynamic_cast<AsplitFilter*>(f)) {
                 return true;
             }
@@ -126,7 +133,7 @@ QString DAGCommandBuilder::buildFilterFlags(
             totalAuxOutputs++;
             lastAuxOutputIdx = static_cast<int>(i);
         }
-        if (dynamic_cast<FFShowwavespic*>(n->filter.get())) {
+        if (isImageOutputFilter(n->filter.get())) {
             totalWaveforms++;
             lastWaveformIdx = static_cast<int>(i);
         }
@@ -148,7 +155,7 @@ QString DAGCommandBuilder::buildFilterFlags(
 
             if ((!f->buildFFmpegFlags().isEmpty() &&
                  !dynamic_cast<AuxOutputFilter*>(f) &&
-                 !dynamic_cast<FFShowwavespic*>(f)) ||
+                 !isImageOutputFilter(f)) ||
                 dynamic_cast<AsplitFilter*>(f)) {
                 hasFiltersAfterBranchOutputs = true;
                 break;
@@ -206,16 +213,16 @@ QString DAGCommandBuilder::buildFilterFlags(
         }
 
         // ============================================================
-        // CASE 2: FFShowwavespic — asplit + showwavespic branch
+        // CASE 2: Image output filter — asplit + image branch
         // ============================================================
-        if (auto* waveform = dynamic_cast<FFShowwavespic*>(rawFilter)) {
+        if (isImageOutputFilter(rawFilter)) {
             waveformsProcessed++;
             bool isLastBranchOutput = (auxOutputsProcessed == totalAuxOutputs &&
                                        waveformsProcessed == totalWaveforms);
 
             int filterId = rawFilter->getFilterId();
             QString filterIdLabel = hexLabelFunc(filterId);
-            QString waveformBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
+            QString imageBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
 
             QString mainContinueLabel;
             if (isLastBranchOutput && !hasFiltersAfterBranchOutputs) {
@@ -224,18 +231,18 @@ QString DAGCommandBuilder::buildFilterFlags(
                 mainContinueLabel = QString("[%1]").arg(filterIdLabel);
             }
 
-            QString waveformInputLabel = QString("[%1-wfin]").arg(filterIdLabel);
+            QString imageInputLabel = QString("[%1-wfin]").arg(filterIdLabel);
             QString asplitCmd = QString("%1asplit=2%2%3")
                 .arg(mainChainInput)
                 .arg(mainContinueLabel)
-                .arg(waveformInputLabel);
+                .arg(imageInputLabel);
             filterStrs.append(asplitCmd);
 
-            QString waveformFilterCmd = QString("%1%2%3")
-                .arg(waveformInputLabel)
-                .arg(waveform->buildFFmpegFlags())
-                .arg(waveformBranchLabel);
-            filterStrs.append(waveformFilterCmd);
+            QString imageFilterCmd = QString("%1%2%3")
+                .arg(imageInputLabel)
+                .arg(rawFilter->buildFFmpegFlags())
+                .arg(imageBranchLabel);
+            filterStrs.append(imageFilterCmd);
 
             mainChainInput = mainContinueLabel;
             continue;

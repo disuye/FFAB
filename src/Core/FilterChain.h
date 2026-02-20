@@ -12,8 +12,9 @@ class BaseFilter;
 class InputFilter;
 class OutputFilter;
 class MultiOutputFilter;
-class FFShowwavespic;  // Forward declaration for waveform image filter
-class FFAnullsink;     // Forward declaration for null sink filter
+class FFShowwavespic;     // Forward declaration for waveform image filter
+class FFShowspectrumpic;  // Forward declaration for spectrum image filter
+class FFAnullsink;        // Forward declaration for null sink filter
 
 /**
  * LogSettings - FFmpeg logging flags configuration
@@ -180,8 +181,8 @@ private:
     // Build output file path for an aux output
     QString buildAuxOutputPath(const QString& inputFile, class AuxOutputFilter* auxOut, int auxIndex) const;
 
-    // Build output file path for a waveform image filter
-    QString buildWaveformOutputPath(const QString& inputFile, FFShowwavespic* waveform) const;
+    // Build output file path for an image output filter (waveform, spectrum, etc.)
+    QString buildImageOutputPath(const QString& inputFile, BaseFilter* imageFilter) const;
 
     // Check if the main chain ends with a sink filter (no audio output)
     bool endsWithSinkFilter(const QList<int>& mutedPositions = QList<int>()) const;

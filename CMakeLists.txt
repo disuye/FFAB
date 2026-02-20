@@ -81,6 +81,8 @@ add_executable(FFAB
     src/Filters/ff-volume.cpp
     src/Filters/ff-showwavespic.h
     src/Filters/ff-showwavespic.cpp
+    src/Filters/ff-showspectrumpic.h
+    src/Filters/ff-showspectrumpic.cpp
     src/Filters/ff-afir.h
     src/Filters/ff-afir.cpp
     src/Filters/ff-amerge.h

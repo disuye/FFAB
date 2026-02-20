@@ -186,6 +186,7 @@ QList<FilterMenuBuilder::FilterInfo> FilterMenuBuilder::buildFilterRegistry() {
     // ========== ANALYSIS ==========
     
     registry.append({"ff-showwavespic", "Waveform Image", "Analysis", "Generate static waveform to image file"});
+    registry.append({"ff-showspectrumpic", "Spectrum Image", "Analysis", "Generate static spectrum to image file"});
     registry.append({"ff-silencedetect", "Silence Detect", "Analysis", "Detects silent sections in audio and reports timestamps"});
     registry.append({"ff-volumedetect", "Volume Detect", "Analysis", "Measures and reports volume statistics (mean, max, histogram)"});
     registry.append({"ff-astats", "Audio Stats", "Analysis", "Measure audio statistics (peak, RMS, etc.)"});

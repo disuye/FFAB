@@ -27,6 +27,7 @@
 #include "ff-silenceremove.h"
 #include "ff-volume.h"
 #include "ff-showwavespic.h"
+#include "ff-showspectrumpic.h"
 #include "ff-afir.h"
 #include "ff-amerge.h"
 #include "ff-sidechaincompress.h"
@@ -157,6 +158,33 @@ LogSettings LogSettings::fromQSettings() {
     s.logLevel = settings.value("log/logLevel", "error").toString();
     s.showStats = settings.value("log/showStats", true).toBool();
     return s;
+}
+
+// Classify image output filters (branch via asplit, produce image file)
+static bool isImageOutputFilter(BaseFilter* f) {
+    return dynamic_cast<FFShowwavespic*>(f) ||
+           dynamic_cast<FFShowspectrumpic*>(f);
+}
+
+// Extract common properties from image output filters (both types share same interface)
+struct ImageFilterInfo {
+    QString videoCodecFlags;
+    QString fileExtension;
+    QString filenameSuffix;
+    QString outputFolder;
+    bool useCustomOutputFolder = false;
+};
+
+static ImageFilterInfo getImageFilterInfo(BaseFilter* f) {
+    if (auto* w = dynamic_cast<FFShowwavespic*>(f)) {
+        return { w->getVideoCodecFlags(), w->getFileExtension(),
+                 w->getFilenameSuffix(), w->getOutputFolder(), w->getUseCustomOutputFolder() };
+    }
+    if (auto* s = dynamic_cast<FFShowspectrumpic*>(f)) {
+        return { s->getVideoCodecFlags(), s->getFileExtension(),
+                 s->getFilenameSuffix(), s->getOutputFolder(), s->getUseCustomOutputFolder() };
+    }
+    return {};
 }
 
 // Static empty chain for out-of-bounds access
@@ -361,24 +389,23 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
         }
     }
     
-    // ========== APPEND WAVEFORM IMAGE OUTPUT MAPPINGS ==========
+    // ========== APPEND IMAGE OUTPUT MAPPINGS ==========
     for (size_t i = 1; i < filters.size() - 1; ++i) {
-        if (auto* waveform = dynamic_cast<FFShowwavespic*>(filters[i].get())) {
+        if (isImageOutputFilter(filters[i].get())) {
             int filterId = filters[i]->getFilterId();
             QString filterIdLabel = getFilterHexLabel(filterId);
-            QString waveformBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
-            
-            // Build output file path
-            QString waveformOutputPath = buildWaveformOutputPath(inputFile, waveform);
-            
-            // Append video output mapping
+            QString imageBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
+
+            auto info = getImageFilterInfo(filters[i].get());
+            QString imageOutputPath = buildImageOutputPath(inputFile, filters[i].get());
+
             command += QString(" -map \"%1\" %2 \"%3\"")
-                .arg(waveformBranchLabel)
-                .arg(waveform->getVideoCodecFlags())
-                .arg(waveformOutputPath);
+                .arg(imageBranchLabel)
+                .arg(info.videoCodecFlags)
+                .arg(imageOutputPath);
         }
     }
-    
+
     return command.trimmed();
 }
 
@@ -455,28 +482,27 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
         }
     }
     
-    // ========== APPEND WAVEFORM IMAGE OUTPUT MAPPINGS ==========
+    // ========== APPEND IMAGE OUTPUT MAPPINGS ==========
     for (size_t i = 1; i < filters.size() - 1; ++i) {
         if (mutedPositions.contains(static_cast<int>(i))) {
             continue;
         }
-        
-        if (auto* waveform = dynamic_cast<FFShowwavespic*>(filters[i].get())) {
+
+        if (isImageOutputFilter(filters[i].get())) {
             int filterId = filters[i]->getFilterId();
             QString filterIdLabel = getFilterHexLabel(filterId);
-            QString waveformBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
-            
-            // Build output file path
-            QString waveformOutputPath = buildWaveformOutputPath(inputFile, waveform);
-            
-            // Append video output mapping
+            QString imageBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
+
+            auto info = getImageFilterInfo(filters[i].get());
+            QString imageOutputPath = buildImageOutputPath(inputFile, filters[i].get());
+
             command += QString(" -map \"%1\" %2 \"%3\"")
-                .arg(waveformBranchLabel)
-                .arg(waveform->getVideoCodecFlags())
-                .arg(waveformOutputPath);
+                .arg(imageBranchLabel)
+                .arg(info.videoCodecFlags)
+                .arg(imageOutputPath);
         }
     }
-    
+
     return command.trimmed();
 }
 
@@ -500,9 +526,9 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
             
             auto* filter = filters[j].get();
             
-            // AuxOutput, Waveform, and Asplit count as filters after
+            // AuxOutput, Image output, and Asplit count as filters after
             if (dynamic_cast<AuxOutputFilter*>(filter) ||
-                dynamic_cast<FFShowwavespic*>(filter) ||
+                isImageOutputFilter(filter) ||
                 dynamic_cast<AsplitFilter*>(filter)) {
                 return true;
             }
@@ -540,7 +566,7 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
             totalAuxOutputs++;
             lastAuxOutputPos = i;
         }
-        if (dynamic_cast<FFShowwavespic*>(filters[i].get())) {
+        if (isImageOutputFilter(filters[i].get())) {
             totalWaveforms++;
             lastWaveformPos = i;
         }
@@ -554,9 +580,9 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
         for (size_t i = lastBranchOutputPos + 1; i < filters.size() - 1; ++i) {
             if (mutedPositions.contains(static_cast<int>(i))) continue;
             // Check for regular filters OR asplit (which has empty buildFFmpegFlags)
-            if ((!filters[i]->buildFFmpegFlags().isEmpty() && 
+            if ((!filters[i]->buildFFmpegFlags().isEmpty() &&
                 !dynamic_cast<AuxOutputFilter*>(filters[i].get()) &&
-                !dynamic_cast<FFShowwavespic*>(filters[i].get())) ||
+                !isImageOutputFilter(filters[i].get())) ||
                 dynamic_cast<AsplitFilter*>(filters[i].get())) {
                 hasFiltersAfterBranchOutputs = true;
                 break;
@@ -573,7 +599,7 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
         if (!mutedPositions.contains(static_cast<int>(i)) && 
             !filters[i]->buildFFmpegFlags().isEmpty() &&
             !dynamic_cast<AuxOutputFilter*>(filters[i].get()) &&
-            !dynamic_cast<FFShowwavespic*>(filters[i].get())) {
+            !isImageOutputFilter(filters[i].get())) {
             filterCount++;
         }
     }
@@ -619,8 +645,8 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
             continue;
         }
         
-        // HANDLE WAVEFORM IMAGE FILTER - Insert asplit to branch stream for video output
-        if (auto* waveform = dynamic_cast<FFShowwavespic*>(filters[i].get())) {
+        // HANDLE IMAGE OUTPUT FILTER - Insert asplit to branch stream for image output
+        if (isImageOutputFilter(filters[i].get())) {
             waveformsProcessed++;
             bool isLastBranchOutput = (auxOutputsProcessed == totalAuxOutputs && 
                                        waveformsProcessed == totalWaveforms);
@@ -646,10 +672,10 @@ QString FilterChain::buildFilterFlags(const QList<int>& mutedPositions) const {
                 .arg(waveformInputLabel);
             filterStrs.append(asplitCmd);
             
-            // Add the showwavespic filter
+            // Add the image output filter
             QString waveformFilterCmd = QString("%1%2%3")
                 .arg(waveformInputLabel)
-                .arg(waveform->buildFFmpegFlags())
+                .arg(filters[i]->buildFFmpegFlags())
                 .arg(waveformBranchLabel);
             filterStrs.append(waveformFilterCmd);
             
@@ -1223,35 +1249,28 @@ QString FilterChain::buildAuxOutputPath(const QString& inputFile, AuxOutputFilte
     return QString("%1/%2%3.%4").arg(outputDir).arg(baseName).arg(suffix).arg(extension);
 }
 
-QString FilterChain::buildWaveformOutputPath(const QString& inputFile, FFShowwavespic* waveform) const {
-    if (!waveform) return "";
-    
+QString FilterChain::buildImageOutputPath(const QString& inputFile, BaseFilter* imageFilter) const {
+    if (!imageFilter) return "";
+
+    auto info = getImageFilterInfo(imageFilter);
+
     // Extract base filename without extension
     QFileInfo fileInfo(inputFile);
     QString baseName = fileInfo.completeBaseName();
     QString inputDir = fileInfo.absolutePath();
-    
+
     // Determine output directory
     QString outputDir;
-    if (waveform->getUseCustomOutputFolder() && !waveform->getOutputFolder().isEmpty()) {
-        // Use waveform's custom folder
-        outputDir = waveform->getOutputFolder();
+    if (info.useCustomOutputFolder && !info.outputFolder.isEmpty()) {
+        outputDir = info.outputFolder;
     } else if (outputFilter && !outputFilter->getOutputFolder().isEmpty()) {
-        // Use main OUTPUT filter's folder
         outputDir = outputFilter->getOutputFolder();
     } else {
-        // Fallback to input directory
         outputDir = inputDir;
     }
-    
-    // Get suffix from waveform filter (includes hex ID: _XXXX-waveform)
-    QString suffix = waveform->getFilenameSuffix();
-    
-    // Get file extension (always png)
-    QString extension = waveform->getFileExtension();
-    
-    // Build full path: <dir>/<basename>_<hexID>-waveform.png
-    return QString("%1/%2%3.%4").arg(outputDir).arg(baseName).arg(suffix).arg(extension);
+
+    // Build full path: <dir>/<basename><suffix>.<ext>
+    return QString("%1/%2%3.%4").arg(outputDir).arg(baseName).arg(info.filenameSuffix).arg(info.fileExtension);
 }
 
 bool FilterChain::endsWithSinkFilter(const QList<int>& mutedPositions) const {
@@ -1267,8 +1286,8 @@ bool FilterChain::endsWithSinkFilter(const QList<int>& mutedPositions) const {
         auto* filter = filters[i].get();
         
         // Skip branch output filters - they don't terminate the main chain
-        if (dynamic_cast<AuxOutputFilter*>(filter) || 
-            dynamic_cast<FFShowwavespic*>(filter)) {
+        if (dynamic_cast<AuxOutputFilter*>(filter) ||
+            isImageOutputFilter(filter)) {
             continue;
         }
         
@@ -1387,38 +1406,35 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile,
         }
     }
     
-    // ========== APPEND WAVEFORM IMAGE OUTPUT MAPPINGS ==========
-    qDebug() << "Building waveform output mappings...";
-    
+    // ========== APPEND IMAGE OUTPUT MAPPINGS ==========
+    qDebug() << "Building image output mappings...";
+
     for (size_t i = 1; i < filters.size() - 1; ++i) {
         if (mutedPositions.contains(static_cast<int>(i))) {
             continue;
         }
-        
-        if (auto* waveform = dynamic_cast<FFShowwavespic*>(filters[i].get())) {
+
+        if (isImageOutputFilter(filters[i].get())) {
             int filterId = filters[i]->getFilterId();
             QString filterIdLabel = getFilterHexLabel(filterId);
-            QString waveformBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
-            
-            qDebug() << "  Found Waveform filter! ID:" << filterId << "Label:" << waveformBranchLabel;
-            
-            // Build output file path
-            QString waveformOutputPath = buildWaveformOutputPath(inputFile, waveform);
-            qDebug() << "  Waveform output path:" << waveformOutputPath;
-            
-            QString videoFlags = waveform->getVideoCodecFlags();
-            qDebug() << "  Video codec flags:" << videoFlags;
-            
-            // Append video output mapping
+            QString imageBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
+
+            qDebug() << "  Found image output filter! ID:" << filterId << "Label:" << imageBranchLabel;
+
+            auto info = getImageFilterInfo(filters[i].get());
+            QString imageOutputPath = buildImageOutputPath(inputFile, filters[i].get());
+            qDebug() << "  Image output path:" << imageOutputPath;
+            qDebug() << "  Video codec flags:" << info.videoCodecFlags;
+
             command += QString(" -map \"%1\" %2 \"%3\"")
-                .arg(waveformBranchLabel)
-                .arg(videoFlags)
-                .arg(waveformOutputPath);
-            
-            qDebug() << "  Added waveform mapping to command";
+                .arg(imageBranchLabel)
+                .arg(info.videoCodecFlags)
+                .arg(imageOutputPath);
+
+            qDebug() << "  Added image mapping to command";
         }
     }
-    
+
     qDebug() << "Final command length:" << command.length();
     
     return command.trimmed();
@@ -1491,20 +1507,20 @@ QString FilterChain::buildPreviewCommand(const QString& inputFile,
         }
     }
     
-    // ========== DISCARD WAVEFORM OUTPUT STREAMS ==========
-    // For preview, we need to consume waveform output streams but not write files
+    // ========== DISCARD IMAGE OUTPUT STREAMS ==========
+    // For preview, we need to consume image output streams but not write files
     for (size_t i = 1; i < filters.size() - 1; ++i) {
         if (mutedPositions.contains(static_cast<int>(i))) {
             continue;
         }
-        
-        if (auto* waveform = dynamic_cast<FFShowwavespic*>(filters[i].get())) {
+
+        if (isImageOutputFilter(filters[i].get())) {
             int filterId = filters[i]->getFilterId();
             QString filterIdLabel = getFilterHexLabel(filterId);
-            QString waveformBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
-            
-            // Discard waveform stream to null muxer
-            command += QString(" -map %1 -f null -").arg(waveformBranchLabel);
+            QString imageBranchLabel = QString("[%1-waveform]").arg(filterIdLabel);
+
+            // Discard image stream to null muxer
+            command += QString(" -map %1 -f null -").arg(imageBranchLabel);
         }
     }
     
@@ -1676,6 +1692,8 @@ std::shared_ptr<BaseFilter> FilterChain::createFilterByType(const QString& type)
         return std::make_shared<FFVolume>();
     } else if (type == "ff-showwavespic") {
         return std::make_shared<FFShowwavespic>();
+    } else if (type == "ff-showspectrumpic") {
+        return std::make_shared<FFShowspectrumpic>();
     } else if (type == "ff-afir") {
         return std::make_shared<FFAfir>();
     } else if (type == "ff-amerge") {
