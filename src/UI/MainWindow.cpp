@@ -28,8 +28,11 @@
 #include "BatchConfirmDialog.h"
 #include "LogViewWindow.h"
 #include "Core/JobListBuilder.h"
+#include "Core/UpdateChecker.h"
 
 #include <QVBoxLayout>
+#include <QToolButton>
+#include <QStyle>
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QWidget>
@@ -68,13 +71,41 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     presetManager = new PresetManager(this);
     regionPreviewWindow = new RegionPreviewWindow(this);
     logViewWindow = new LogViewWindow(this);
+    m_updateChecker = new UpdateChecker(this);
 
     setupUI();
     createMenuBar();
     setupKeyCommands();
     connectSignals();
     checkFFmpegAvailability();
-    
+
+    // Update checker signals
+    connect(m_updateChecker, &UpdateChecker::checkFinished, this, [this](bool available) {
+        m_updateIcon->setVisible(available);
+        m_updateLabel->setVisible(available);
+        if (available) {
+            m_updateLabel->setText(
+                QString("<a style='color: #FF5500; text-decoration: none;' href='#'>"
+                        "Version %1 available now | Current %2</a>")
+                    .arg(m_updateChecker->latestVersion(), VERSION_STR));
+        }
+    });
+
+    auto openUpdatesTab = [this]() {
+        SettingsDialog dialog(this, m_updateChecker);
+        dialog.setCurrentTab(3);
+        if (dialog.exec() == QDialog::Accepted) {
+            checkFFmpegAvailability();
+        }
+    };
+
+    connect(m_updateIcon, &QToolButton::clicked, this, openUpdatesTab);
+    connect(m_updateLabel, &QLabel::linkActivated, this, openUpdatesTab);
+
+    // Check for updates on startup (respects 7-day cache)
+    if (m_updateChecker->weeklyCheckEnabled())
+        m_updateChecker->checkForUpdate(false);
+
     // Restore window geometry from preferences
     QByteArray geometry = Preferences::instance().mainWindowGeometry();
     if (!geometry.isEmpty()) {
@@ -263,6 +294,24 @@ void MainWindow::setupUI() {
     scanProgressBar->setVisible(false);
     bottomLayout->addWidget(scanProgressBar, 1);
     
+    // Update available icon (hidden by default)
+    m_updateIcon = new QToolButton();
+    m_updateIcon->setIcon(style()->standardIcon(QStyle::SP_MessageBoxInformation));
+    m_updateIcon->setIconSize(QSize(14, 14));
+    m_updateIcon->setFixedSize(18, 18);
+    m_updateIcon->setStyleSheet(
+        "QToolButton { border: none; background: transparent; }"
+        "QToolButton:hover { background: rgba(128,128,128,0.2); border-radius: 2px; }");
+    m_updateIcon->setCursor(Qt::PointingHandCursor);
+    m_updateIcon->setVisible(false);
+    bottomLayout->addWidget(m_updateIcon, 0);
+
+    m_updateLabel = new QLabel("");
+    m_updateLabel->setStyleSheet("QLabel { font-size: 10px; color: #808080; }");
+    m_updateLabel->setCursor(Qt::PointingHandCursor);
+    m_updateLabel->setVisible(false);
+    bottomLayout->addWidget(m_updateLabel, 0);
+
     // FFmpeg Status LED (bottom right corner)
     ffmpegStatusLabel = new QLabel("");
     ffmpegStatusLabel->setAlignment(Qt::AlignRight | Qt::AlignBottom);
@@ -1349,7 +1398,7 @@ void MainWindow::onBatchFinished(int completed, int failed) {
 
 
 void MainWindow::onShowSettings() {
-    SettingsDialog dialog(this);
+    SettingsDialog dialog(this, m_updateChecker);
     if (dialog.exec() == QDialog::Accepted) {
         // Re-detect FFmpeg in case the user changed the path
         checkFFmpegAvailability();

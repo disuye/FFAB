@@ -14,9 +14,8 @@
  * - Recent presets list
  * 
  * Storage location:
- * - macOS: ~/Library/Preferences/com.ffab.FFAB.plist
+ * - macOS: ~/Library/Preferences/com.disuye.FFAB.plist
  * - Linux: ~/.config/FFAB/FFAB.conf
- * - Windows: Registry HKEY_CURRENT_USER/Software/FFAB/FFAB
  */
 class Preferences {
 public:

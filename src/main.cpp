@@ -5,6 +5,8 @@
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
 
+    app.setOrganizationDomain("disuye");
+    app.setOrganizationName("disuye");
     app.setApplicationName("FFAB");
     app.setApplicationVersion(VERSION_STR);
     app.setApplicationDisplayName("FFmpeg Audio Batch");

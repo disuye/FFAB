@@ -7,8 +7,8 @@ Preferences& Preferences::instance() {
     return instance;
 }
 
-Preferences::Preferences() 
-    : m_settings(QSettings::NativeFormat, QSettings::UserScope, "FFAB", "FFAB") {
+Preferences::Preferences()
+    : m_settings() {
 }
 
 // ========== Window Geometry ==========

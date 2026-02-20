@@ -35,6 +35,8 @@ class RotatedLabel;
 class BatchSettingsWindow;
 class RegionPreviewWindow;
 class LogViewWindow;
+class UpdateChecker;
+class QToolButton;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -154,7 +156,12 @@ private:
 
     // Log view window
     LogViewWindow* logViewWindow = nullptr;
-    
+
+    // Update checker
+    UpdateChecker* m_updateChecker = nullptr;
+    QToolButton*   m_updateIcon = nullptr;
+    QLabel*        m_updateLabel = nullptr;
+
     // Helper
     void checkFFmpegAvailability();
     bool regionWindowIsActive() const;

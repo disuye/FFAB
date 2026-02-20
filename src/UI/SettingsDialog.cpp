@@ -1,4 +1,6 @@
 #include "SettingsDialog.h"
+#include "Core/UpdateChecker.h"
+#include "Core/AppConfig.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
@@ -16,9 +18,11 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <QFrame>
+#include <QProgressBar>
 
-SettingsDialog::SettingsDialog(QWidget* parent)
+SettingsDialog::SettingsDialog(QWidget* parent, UpdateChecker* checker)
     : QDialog(parent)
+    , m_updateChecker(checker)
 {
     setWindowTitle("FFAB Settings");
     setMinimumSize(560, 520);
@@ -26,7 +30,8 @@ SettingsDialog::SettingsDialog(QWidget* parent)
 
     auto* mainLayout = new QVBoxLayout(this);
 
-    auto* tabs = new QTabWidget();
+    m_tabs = new QTabWidget();
+    auto* tabs = m_tabs;
 
     // ===== PROCESSING TAB =====
     auto* processingPage = new QWidget();
@@ -245,6 +250,142 @@ SettingsDialog::SettingsDialog(QWidget* parent)
 
     tabs->addTab(logFilePage, "Log File");
 
+    // ===== UPDATES TAB =====
+    auto* updatesPage = new QWidget();
+    auto* updatesLayout = new QVBoxLayout(updatesPage);
+
+    // --- Check for updates ---
+    m_checkWeeklyCheck = new QCheckBox("Check once a week for updates");
+    updatesLayout->addWidget(m_checkWeeklyCheck);
+
+    // Separator
+    auto* updatesSep1 = new QFrame();
+    updatesSep1->setFrameShape(QFrame::HLine);
+    updatesSep1->setFrameShadow(QFrame::Sunken);
+    updatesLayout->addWidget(updatesSep1);
+
+    // --- Manual link ---
+    auto* manualLink = new QLabel(
+        QString("<small>Or manually click this "
+        "<a style='color: %1' href='https://github.com/disuye/FFAB-releases/releases/latest'>link</a>"
+        " to visit the Github page</small>").arg(LINK_COLOR));
+    manualLink->setOpenExternalLinks(true);
+    manualLink->setStyleSheet("color: #808080;");
+    manualLink->setWordWrap(true);
+    updatesLayout->addWidget(manualLink);
+
+    // Separator
+    auto* updatesSep2 = new QFrame();
+    updatesSep2->setFrameShape(QFrame::HLine);
+    updatesSep2->setFrameShadow(QFrame::Sunken);
+    updatesLayout->addWidget(updatesSep2);
+
+    // --- Check Now / Download Now buttons ---
+    auto* checkRow = new QHBoxLayout();
+    m_checkNowBtn = new QPushButton("Check Now");
+    m_checkNowBtn->setFixedWidth(100);
+    checkRow->addWidget(m_checkNowBtn);
+
+    m_downloadNowBtn = new QPushButton("Download Now");
+    m_downloadNowBtn->setFixedWidth(120);
+    m_downloadNowBtn->setEnabled(false);
+    checkRow->addWidget(m_downloadNowBtn);
+
+    checkRow->addStretch();
+    updatesLayout->addLayout(checkRow);
+
+    m_updateStatusLabel = new QLabel("");
+    m_updateStatusLabel->setWordWrap(true);
+    m_updateStatusLabel->setStyleSheet("color: #808080;");
+    updatesLayout->addWidget(m_updateStatusLabel);
+
+    // Download progress bar (hidden by default)
+    m_downloadProgress = new QProgressBar();
+    m_downloadProgress->setFixedHeight(4);
+    m_downloadProgress->setTextVisible(false);
+    m_downloadProgress->setStyleSheet(
+        "QProgressBar {"
+        "    border: none;"
+        "    background-color: #404040;"
+        "    border-radius: 2px;"
+        "}"
+        "QProgressBar::chunk {"
+        "    background-color: rgba(255, 85, 0, 0.80);"
+        "    border-radius: 2px;"
+        "}"
+    );
+    m_downloadProgress->setVisible(false);
+    updatesLayout->addWidget(m_downloadProgress);
+
+    updatesLayout->addStretch();
+
+    // --- Last checked label ---
+    m_lastCheckedLabel = new QLabel("");
+    m_lastCheckedLabel->setStyleSheet("color: #808080; font-size: 10px;");
+    updatesLayout->addWidget(m_lastCheckedLabel);
+
+    // Signal connections for Updates tab
+    if (m_updateChecker) {
+        connect(m_checkNowBtn, &QPushButton::clicked, [this]() {
+            m_checkNowBtn->setEnabled(false);
+            m_updateStatusLabel->setText("Checking...");
+            m_updateChecker->checkForUpdate(true);
+        });
+
+        connect(m_updateChecker, &UpdateChecker::checkFinished, this, [this](bool available) {
+            m_checkNowBtn->setEnabled(true);
+            m_downloadNowBtn->setEnabled(available && !m_updateChecker->downloadUrl().isEmpty());
+            if (available) {
+                m_updateStatusLabel->setText(
+                    QString("Version %1 available now | Current %2")
+                        .arg(m_updateChecker->latestVersion(), VERSION_STR));
+            } else {
+                m_updateStatusLabel->setText("You are running the latest version.");
+            }
+            QDateTime lastCheck = m_updateChecker->lastCheckTime();
+            if (lastCheck.isValid()) {
+                m_lastCheckedLabel->setText(
+                    "Last checked: " + lastCheck.toString("MMM d, yyyy"));
+            }
+        });
+
+        connect(m_updateChecker, &UpdateChecker::checkFailed, this, [this](const QString& err) {
+            m_checkNowBtn->setEnabled(true);
+            m_updateStatusLabel->setText("Check failed: " + err);
+        });
+
+        connect(m_downloadNowBtn, &QPushButton::clicked, [this]() {
+            m_downloadNowBtn->setEnabled(false);
+            m_updateStatusLabel->setText("Downloading...");
+            m_updateChecker->downloadUpdate();
+        });
+
+        connect(m_updateChecker, &UpdateChecker::downloadProgress, this,
+                [this](qint64 recv, qint64 total) {
+            m_downloadProgress->setVisible(true);
+            if (total > 0) {
+                m_downloadProgress->setMaximum(static_cast<int>(total / 1024));
+                m_downloadProgress->setValue(static_cast<int>(recv / 1024));
+            }
+        });
+
+        connect(m_updateChecker, &UpdateChecker::downloadFinished, this,
+                [this](const QString& path) {
+            m_downloadProgress->setVisible(false);
+            m_updateStatusLabel->setText("Downloaded to: " + path);
+        });
+
+        connect(m_updateChecker, &UpdateChecker::downloadFailed, this,
+                [this](const QString& err) {
+            m_downloadProgress->setVisible(false);
+            m_updateStatusLabel->setText("Download failed: " + err);
+        });
+    } else {
+        m_checkNowBtn->setEnabled(false);
+    }
+
+    tabs->addTab(updatesPage, "Updates");
+
     mainLayout->addWidget(tabs);
 
     // Dialog buttons
@@ -261,6 +402,10 @@ SettingsDialog::SettingsDialog(QWidget* parent)
 
 int SettingsDialog::maxConcurrent() const {
     return m_concurrentSpin->value();
+}
+
+void SettingsDialog::setCurrentTab(int index) {
+    m_tabs->setCurrentIndex(index);
 }
 
 QString SettingsDialog::ffmpegPath() const {
@@ -307,6 +452,21 @@ void SettingsDialog::loadSettings() {
     // Apply enabled state
     m_logPreviewCheck->setEnabled(m_saveLogCheck->isChecked());
     m_logViewWindowCheck->setEnabled(m_saveLogCheck->isChecked());
+
+    // Updates tab
+    if (m_updateChecker) {
+        m_checkWeeklyCheck->setChecked(m_updateChecker->weeklyCheckEnabled());
+        m_downloadNowBtn->setEnabled(
+            m_updateChecker->updateAvailable() && !m_updateChecker->downloadUrl().isEmpty());
+
+        QDateTime lastCheck = m_updateChecker->lastCheckTime();
+        if (lastCheck.isValid()) {
+            m_lastCheckedLabel->setText(
+                "Last checked: " + lastCheck.toString("MMM d, yyyy"));
+        } else {
+            m_lastCheckedLabel->setText("Last checked: Never");
+        }
+    }
 }
 
 void SettingsDialog::saveSettings() {
@@ -325,6 +485,11 @@ void SettingsDialog::saveSettings() {
     settings.setValue("log/saveToFile", m_saveLogCheck->isChecked());
     settings.setValue("log/logPreview", m_logPreviewCheck->isChecked());
     settings.setValue("log/openViewLog", m_logViewWindowCheck->isChecked());
+
+    // Updates tab
+    if (m_updateChecker) {
+        m_updateChecker->setWeeklyCheckEnabled(m_checkWeeklyCheck->isChecked());
+    }
 
     settings.sync();
 }

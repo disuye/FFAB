@@ -59,6 +59,8 @@ add_executable(FFAB
     src/Core/FilterGraph.cpp
     src/Core/DAGCommandBuilder.h
     src/Core/DAGCommandBuilder.cpp
+    src/Core/UpdateChecker.h
+    src/Core/UpdateChecker.cpp
 
     # Filters (Structural)
     src/Filters/BaseFilter.h
