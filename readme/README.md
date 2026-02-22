@@ -1,7 +1,7 @@
 # FFAB Overview
 
 ### NOTE: 2026-02-18
-- prior repo (private) history exists in /FFAB-beta -> v.0.1.10
+- prior repo (private) history exists in /FFAB-beta → v.0.1.10
 - this new repo begins from FFAB v1.0.x
 - this new repo contains audio routing architecture refactor
 
@@ -457,7 +457,7 @@ Mac users will probably need run the following Terminal command to get around Ap
 
 Linux users will probably need to run the following Terminal command to get real-time audio previews to work:
 
-```GST_PLUGIN_SYSTEM_PATH=/usr/lib/$(uname -m)-linux-gnu/gstreamer-1.0 ./FFAB_version_.AppImage```
+```GST_PLUGIN_SYSTEM_PATH=/usr/lib/$(uname -m)-linux-gnu/gstreamer-1.0 ./FFAB*.AppImage```
 
 (This is related to a GStreamer-bundling rabbit hole I don't have time for right now. But if someone in the Linux community wants to tidy this up, email me. ARM64 tested, x86_64 untested.)
 
