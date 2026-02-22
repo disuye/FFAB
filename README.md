@@ -1,12 +1,14 @@
 # FFAB Overview
 
-[www.disuye.com/ffab](https://www.disuye.com/ffab/)
+![FFAB](./readme/ffab-mode-dark.png)
 
 FFAB is a cross-platform, complex audio batch processor, effects rack, command builder & graphical user interface for [FFmpeg](https://ffmpeg.org/download.html).
 
-But only the sound related stuff.
+More info here: [www.disuye.com/ffab](https://www.disuye.com/ffab/)
 
-FFAB is for musicians, sound engineers, media archivists, sonic artists, mental experimentalists, or anyone curious enough to collide thousands of files together into one hot mess.
+<!--But only the sound related stuff.
+
+FFAB is for musicians, sound engineers, media archivists, sonic artists, mental experimentalists, or anyone curious enough to collide thousands of files together into one hot mess.-->
 
 # Download & Install
 
@@ -19,20 +21,18 @@ Check [Releases](https://github.com/disuye/FFAB/releases) for the latest DMG/ZIP
 #### macOS
 FFAB.app is not notarized by Apple and may be blocked by macOS Gatekeeper. 
 - Monterey & Sonoma, right click FFAB.app, click Open, click Confirm
-- Sequoia & Tahoe run this Terminal command:
-```xattr -cr /Applications/FFAB.app```
+- Sequoia & Tahoe run this Terminal command: ```xattr -cr /Applications/FFAB.app```
 
 #### Linux
 
-Audio preview player might fail on some Linux versions.
-- Launch FFAB.AppImage with this Terminal command: 
-```GST_PLUGIN_SYSTEM_PATH=​/usr/lib/$(uname -m)​-linux-gnu/gstreamer-1.0 ./FFAB*.AppImage```
-
+Audio preview player may fail on some Linux versions.
+- This can be fixed with community help!
+- Launch FFAB.AppImage with this Terminal command: ```GST_PLUGIN_SYSTEM_PATH=​/usr/lib/$(uname -m)​-linux-gnu/gstreamer-1.0 ./FFAB*.AppImage```
 
 # Build From Source
 
-- Developed on macOS Sequoia Silicon with Qt version 6.10.1
-- Run ```/scripts/dummyAGL.sh``` and FFAB also builds OK with Qt 6.7.3
+- Developed on macOS Sequoia Silicon using Qt version 6.10.1
+- Run ```/scripts/dummyAGL.sh``` and FFAB can also build with Qt 6.7.3
 - Install ```brew install ninja```
 - Run ```/scripts/ninja.sh``` for the debug version
 - Run ```/scripts/ninja-release.sh``` to build macOS Silicon & Universal
