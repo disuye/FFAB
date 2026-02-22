@@ -41,8 +41,9 @@ void PreviewGenerator::generate(
     // Create FFAB temp directory if it doesn't exist
     QDir().mkpath(ffabTempDir);
 
-    tempAudioPath = ffabTempDir + "/ffab_preview.wav";  // Always WAV for preview
-    tempWaveformPath = ffabTempDir + "/ffab_waveform.png";
+    m_tempSlot = (m_tempSlot + 1) % kTempSlots;
+    tempAudioPath    = ffabTempDir + QString("/ffab_preview_%1.wav").arg(m_tempSlot);
+    tempWaveformPath = ffabTempDir + QString("/ffab_waveform_%1.png").arg(m_tempSlot);
 
     emit started();
 

@@ -1708,7 +1708,7 @@ void MainWindow::onGeneratePreview() {
     // Start preview generation
     // Use higher resolution waveform when Region Preview window is open
     QString waveformSize = regionWindowIsActive() ? "3000x2000" : "2000x160";
-    
+
     previewGenerator->generate(
         sourceFile,
         outputFormat,

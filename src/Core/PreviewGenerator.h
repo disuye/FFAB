@@ -55,6 +55,9 @@ private:
     
     void generateWaveform(const QString& audioFile);
     
+    static constexpr int kTempSlots = 3;  // Rotating buffer — never overwrite the playing file
+    int m_tempSlot = 0;
+
     QString sourceFile;
     QString ffmpegPath;
     QString tempAudioPath;
