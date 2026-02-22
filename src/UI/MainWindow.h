@@ -163,6 +163,7 @@ private:
 
     // Playback menu
     QAction* m_loopPreviewAction = nullptr;
+    bool m_autoPlayNextPreview = false;
 
     // Helper
     void checkFFmpegAvailability();

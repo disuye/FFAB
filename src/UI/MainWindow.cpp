@@ -504,7 +504,12 @@ void MainWindow::connectSignals() {
     
     connect(inputPanel->getFileListWidget(), &FileListWidget::rescanRequested,
             this, &MainWindow::onRescanMainFileList);
-    
+
+    connect(inputPanel->getFileListWidget(), &FileListWidget::previewRequested, this, [this]() {
+        m_autoPlayNextPreview = true;
+        onGeneratePreview();
+    });
+
     // Preview generation signals
     connect(waveformPreview, &WaveformPreviewWidget::generatePreviewRequested,
             this, &MainWindow::onGeneratePreview);
@@ -1741,8 +1746,9 @@ void MainWindow::onPreviewFinished(const QString& audioFile, const QString& wave
     waveformPreview->setPreviewFile(audioFile, waveformFile);
     regionPreviewWindow->setPreviewFile(audioFile, waveformFile);
 
-    // Single controlled auto-play when loop mode is active
-    if (m_loopPreviewAction && m_loopPreviewAction->isChecked()) {
+    // Auto-play: loop mode active, or double-click triggered this generation
+    if ((m_loopPreviewAction && m_loopPreviewAction->isChecked()) || m_autoPlayNextPreview) {
+        m_autoPlayNextPreview = false;
         if (regionWindowIsActive()) {
             regionPreviewWindow->playFromRegionOrStart();
         } else {

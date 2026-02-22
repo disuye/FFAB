@@ -64,6 +64,7 @@ public:
 signals:
     void fileSelectionChanged();  // Emitted when checkboxes change
     void rescanRequested();  // Emitted when user clicks Rescan Metadata button
+    void previewRequested();  // Emitted on double-click: generate preview + auto-play
     
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;

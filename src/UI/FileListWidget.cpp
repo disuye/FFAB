@@ -52,6 +52,12 @@ void FileListWidget::setupUI() {
     
     // Install event filter to catch Delete key
     tableWidget->installEventFilter(this);
+
+    // Double-click on any non-checkbox column → generate preview + auto-play
+    connect(tableWidget, &QTableWidget::cellDoubleClicked, this, [this](int /*row*/, int col) {
+        if (col == 0) return;  // Ignore checkbox column
+        emit previewRequested();
+    });
     
     layout->addWidget(tableWidget);
 }
