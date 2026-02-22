@@ -158,12 +158,10 @@ void RegionPreviewWindow::setPreviewFile(const QString& audioFilePath, const QSt
         return;
     }
     
-    // Force reload media — suppress loop reaction to stop during reload
-    m_suppressLoop = true;
+    // Force reload
     mediaPlayer->stop();
     mediaPlayer->setSource(QUrl());
     mediaPlayer->setSource(QUrl::fromLocalFile(audioFilePath));
-    m_suppressLoop = false;
 
     playButton->setEnabled(true);
     m_playheadMs = 0;
@@ -175,7 +173,6 @@ void RegionPreviewWindow::setPreviewFile(const QString& audioFilePath, const QSt
 }
 
 void RegionPreviewWindow::clearPreview() {
-    m_suppressLoop = true;
     mediaPlayer->stop();
     mediaPlayer->setSource(QUrl());
     
@@ -209,7 +206,6 @@ qint64 RegionPreviewWindow::regionEndMs() const {
 void RegionPreviewWindow::clearRegion() {
     // If looping was clamped to this region, stop playback — no valid loop point anymore
     if (m_looping && hasRegion() && mediaPlayer->playbackState() == QMediaPlayer::PlayingState) {
-        m_suppressLoop = true;
         mediaPlayer->stop();
         mediaPlayer->setPosition(0);
         m_playheadMs = 0;
@@ -219,6 +215,10 @@ void RegionPreviewWindow::clearRegion() {
     m_regionEndMs = -1;
     m_isDragging = false;
     m_isMoving = false;
+    // No region → switch back to Qt-native loop if looping is active
+    if (m_looping) {
+        mediaPlayer->setLoops(QMediaPlayer::Infinite);
+    }
     updateTimeLabels();
     updateDisplay();
     m_regionStartRatio = -1.0;
@@ -436,12 +436,15 @@ void RegionPreviewWindow::handleCanvasMouseRelease(QMouseEvent* event) {
 
     if (m_isDragging) {
         m_isDragging = false;
-        
+
         // If start == end (no drag distance), this was just an ALT+click — clear region
         if (m_regionStartMs == m_regionEndMs) {
             clearRegion();
+        } else if (m_looping) {
+            // Region drawn while looping — switch to manual boundary handling
+            mediaPlayer->setLoops(1);
         }
-        
+
         updateDisplay();
     }
     
@@ -458,8 +461,6 @@ void RegionPreviewWindow::handleCanvasMouseRelease(QMouseEvent* event) {
 
 void RegionPreviewWindow::onPlayClicked() {
     if (mediaPlayer->playbackState() == QMediaPlayer::PlayingState) {
-        // User-initiated stop — suppress loop restart
-        m_suppressLoop = true;
         mediaPlayer->stop();
         mediaPlayer->setPosition(0);
         playButton->setIcon(Sym::playIcon());
@@ -478,7 +479,6 @@ void RegionPreviewWindow::onPlayClicked() {
 
 void RegionPreviewWindow::stopPlayback() {
     if (mediaPlayer->playbackState() != QMediaPlayer::StoppedState) {
-        m_suppressLoop = true;
         mediaPlayer->stop();
         mediaPlayer->setPosition(0);
         playButton->setIcon(Sym::playIcon());
@@ -521,7 +521,6 @@ void RegionPreviewWindow::onPositionChanged(qint64 position) {
             m_playheadMs = m_regionStartMs;
         } else {
             // No loop: stop at region end
-            m_suppressLoop = true;
             mediaPlayer->stop();
             m_playheadMs = m_regionEndMs;
             playButton->setIcon(Sym::playIcon());
@@ -545,17 +544,8 @@ void RegionPreviewWindow::onDurationChanged(qint64 newDuration) {
 
 void RegionPreviewWindow::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {
     if (state == QMediaPlayer::StoppedState) {
-        if (m_looping && !m_suppressLoop && playButton->isEnabled()) {
-            // Natural end of file (no region, or region handling didn't catch it) — loop from start
-            emit playbackStarted();
-            mediaPlayer->setPosition(0);
-            mediaPlayer->play();
-            // playButton stays as stopIcon
-        } else {
-            m_suppressLoop = false;
-            playButton->setIcon(Sym::playIcon());
-            updateDisplay();
-        }
+        playButton->setIcon(Sym::playIcon());
+        updateDisplay();
     }
 }
 

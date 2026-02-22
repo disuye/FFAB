@@ -244,16 +244,18 @@ void PreviewGenerator::cancel() {
     logWriter->close();
 
     if (audioProcess) {
+        disconnect(audioProcess, nullptr, this, nullptr);  // Prevent finished/readyRead from firing during waitForFinished
         audioProcess->kill();
         audioProcess->waitForFinished(1000);
-        audioProcess->deleteLater();
+        delete audioProcess;
         audioProcess = nullptr;
     }
 
     if (waveformProcess) {
+        disconnect(waveformProcess, nullptr, this, nullptr);
         waveformProcess->kill();
         waveformProcess->waitForFinished(1000);
-        waveformProcess->deleteLater();
+        delete waveformProcess;
         waveformProcess = nullptr;
     }
 }
