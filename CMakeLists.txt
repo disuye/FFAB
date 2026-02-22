@@ -386,8 +386,8 @@ target_include_directories(FFAB PRIVATE
 qt6_add_resources(FFAB "app_resources"
     PREFIX "/"
     FILES
-        AppIcon.icns
-        AppIcon.png
+        images/AppIcon.icns
+        images/AppIcon.png
         fonts/FiraCode-VariableFont_wght.ttf
         images/log-bg-light.png
         images/log-bg-dark.png
@@ -427,7 +427,7 @@ if(APPLE)
         MACOSX_BUNDLE_ICON_FILE AppIcon.icns
         )
         
-        set(app_icon_macos "${CMAKE_CURRENT_SOURCE_DIR}/AppIcon.icns")
+        set(app_icon_macos "${CMAKE_CURRENT_SOURCE_DIR}/images/AppIcon.icns")
         set_source_files_properties(${app_icon_macos} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
         target_sources(FFAB PRIVATE ${app_icon_macos})
         

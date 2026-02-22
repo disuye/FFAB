@@ -1397,7 +1397,7 @@ void MainWindow::showAboutDialog() {
     aboutDialog->setMinimumSize(320, 480);
     aboutDialog->setMaximumSize(320, 480);
     
-    QPixmap iconPixmap(":/AppIcon.png");
+    QPixmap iconPixmap(":/images/AppIcon.png");
     QPixmap iconSmall = iconPixmap.scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     
     if (!iconPixmap.isNull()) {
