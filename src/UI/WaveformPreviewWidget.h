@@ -61,7 +61,7 @@ public:
     void play() { onPlayClicked(); }
     void stop();
 
-    void setLooping(bool loop) { m_looping = loop; }
+    void setLooping(bool loop) { m_looping = loop; mediaPlayer->setLoops(loop ? QMediaPlayer::Infinite : 1); }
     
 signals:
     void generatePreviewRequested();
@@ -91,7 +91,6 @@ private:
     qint64 duration;
 
     bool m_looping = false;
-    bool m_suppressLoop = false;  // Set before programmatic stop to prevent loop restart
 
     bool eventFilter(QObject* obj, QEvent* event) override;
 };

@@ -129,7 +129,7 @@ RegionPreviewWindow::RegionPreviewWindow(QWidget* parent)
     audioOutput = new QAudioOutput(this);
     mediaPlayer->setAudioOutput(audioOutput);
     audioOutput->setVolume(1.0);
-    
+
     connect(mediaPlayer, &QMediaPlayer::positionChanged, this, &RegionPreviewWindow::onPositionChanged);
     connect(mediaPlayer, &QMediaPlayer::durationChanged, this, &RegionPreviewWindow::onDurationChanged);
     connect(mediaPlayer, &QMediaPlayer::playbackStateChanged, this, &RegionPreviewWindow::onPlaybackStateChanged);

@@ -75,7 +75,7 @@ WaveformPreviewWidget::WaveformPreviewWidget(QWidget* parent)
     audioOutput = new QAudioOutput(this);
     mediaPlayer->setAudioOutput(audioOutput);
     audioOutput->setVolume(1.0);
-    
+
     connect(mediaPlayer, &QMediaPlayer::positionChanged, this, &WaveformPreviewWidget::onPositionChanged);
     connect(mediaPlayer, &QMediaPlayer::durationChanged, this, &WaveformPreviewWidget::onDurationChanged);
     connect(mediaPlayer, &QMediaPlayer::playbackStateChanged, this, &WaveformPreviewWidget::onPlaybackStateChanged);
@@ -92,12 +92,10 @@ void WaveformPreviewWidget::setPreviewFile(const QString& audioFilePath, const Q
     waveformCanvas->setPixmap(waveformImage);
     waveformCanvas->playheadProgress = -1.0;  // No playhead yet
 
-    // FORCE RELOAD: suppress loop reaction to the stop, then reload source
-    m_suppressLoop = true;
+    // Force reload
     mediaPlayer->stop();
     mediaPlayer->setSource(QUrl());  // Clear old source
     mediaPlayer->setSource(QUrl::fromLocalFile(audioFilePath));  // Load new
-    m_suppressLoop = false;
 
     // Enable playback controls
     playButton->setEnabled(true);
@@ -107,7 +105,6 @@ void WaveformPreviewWidget::setPreviewFile(const QString& audioFilePath, const Q
 }
 
 void WaveformPreviewWidget::clearPreview() {
-    m_suppressLoop = true;
     mediaPlayer->stop();
     mediaPlayer->setSource(QUrl());
     
@@ -134,8 +131,6 @@ void WaveformPreviewWidget::setCanvasVisible(bool visible) {
 
 void WaveformPreviewWidget::onPlayClicked() {
     if (mediaPlayer->playbackState() == QMediaPlayer::PlayingState) {
-        // User-initiated stop — suppress loop restart
-        m_suppressLoop = true;
         mediaPlayer->stop();
         mediaPlayer->setPosition(0);
         playButton->setIcon(Sym::playIcon());
@@ -152,7 +147,6 @@ void WaveformPreviewWidget::onPlayClicked() {
 void WaveformPreviewWidget::stop() {
     // Always stop playback (not a toggle like onPlayClicked)
     if (mediaPlayer->playbackState() != QMediaPlayer::StoppedState) {
-        m_suppressLoop = true;
         mediaPlayer->stop();
         mediaPlayer->setPosition(0);
         playButton->setIcon(Sym::playIcon());
@@ -228,21 +222,11 @@ void WaveformPreviewWidget::onWaveformClicked(QMouseEvent* event) {
     playButton->setIcon(Sym::stopIcon());
 }
 
-// Reset [stop] icon back to [play] once audio playback is complete, or loop if active
+// Reset [stop] icon back to [play] on explicit stop (natural loop handled by setLoops)
 void WaveformPreviewWidget::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {
     if (state == QMediaPlayer::StoppedState) {
-        if (m_looping && !m_suppressLoop && playButton->isEnabled()) {
-            // Natural end of file — loop from beginning
-            emit playbackStarted();
-            mediaPlayer->setPosition(0);
-            mediaPlayer->play();
-            // playButton stays as stopIcon
-        } else {
-            // Programmatic stop or loop not active
-            m_suppressLoop = false;
-            playButton->setIcon(Sym::playIcon());
-            waveformCanvas->playheadProgress = -1.0;
-            waveformCanvas->update();
-        }
+        playButton->setIcon(Sym::playIcon());
+        waveformCanvas->playheadProgress = -1.0;
+        waveformCanvas->update();
     }
 }
