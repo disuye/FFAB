@@ -143,6 +143,8 @@ FFAB/
 
 # FFAB is FREE
 
+<img src="./images/AppIcon.png" width="128px">
+
 FFAB is free / donationware, you can support this project by purchasing music from here:
 
 - https://dan-f.bandcamp.com
