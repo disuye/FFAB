@@ -78,6 +78,8 @@ public:
     // Playback control (for cross-stop and key commands)
     void stopPlayback();
     void playFromRegionOrStart();
+
+    void setLooping(bool loop) { m_looping = loop; }
     
 signals:
     void generatePreviewRequested();
@@ -132,6 +134,9 @@ private:
     qint64 m_moveOrigEndMs = 0;
     
     qint64 m_playheadMs = 0;
+
+    bool m_looping = false;
+    bool m_suppressLoop = false;  // Set before programmatic stop to prevent loop restart
 
     // percentage region location
     double m_regionStartRatio = -1.0;  // 0.0–1.0, -1 = no region

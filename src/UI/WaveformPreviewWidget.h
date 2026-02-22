@@ -60,6 +60,8 @@ public:
     // Public method to trigger playback (for keyboard shortcuts)
     void play() { onPlayClicked(); }
     void stop();
+
+    void setLooping(bool loop) { m_looping = loop; }
     
 signals:
     void generatePreviewRequested();
@@ -87,7 +89,10 @@ private:
     
     QPixmap waveformImage;
     qint64 duration;
-    
+
+    bool m_looping = false;
+    bool m_suppressLoop = false;  // Set before programmatic stop to prevent loop restart
+
     bool eventFilter(QObject* obj, QEvent* event) override;
 };
 

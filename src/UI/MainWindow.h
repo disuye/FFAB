@@ -161,6 +161,9 @@ private:
     UpdateChecker* m_updateChecker = nullptr;
     QLabel*        m_updateLabel = nullptr;
 
+    // Playback menu
+    QAction* m_loopPreviewAction = nullptr;
+
     // Helper
     void checkFFmpegAvailability();
     bool regionWindowIsActive() const;

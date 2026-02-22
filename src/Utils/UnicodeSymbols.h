@@ -183,6 +183,16 @@ inline QIcon arrowLeftIcon() {
     }));
 }
 
+// ↻ Loop — circular arrow for loop/repeat
+inline QIcon loopIcon() {
+    return QIcon(new AdaptiveIconEngine([](const QByteArray& fg, const QByteArray&) {
+        return makeSvg(
+            "<path d='M12,8 A4,4 0 1,1 8,4' fill='none' stroke='" + fg + "' stroke-width='1.5' stroke-linecap='round'/>"
+            "<polyline points='10,2 8,4 10,6' fill='none' stroke='" + fg + "' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/>"
+        );
+    }));
+}
+
 // → ArrowRight
 inline QIcon arrowRightIcon() {
     return QIcon(new AdaptiveIconEngine([](const QByteArray& fg, const QByteArray&) {

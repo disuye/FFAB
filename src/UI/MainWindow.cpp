@@ -322,7 +322,15 @@ void MainWindow::createMenuBar() {
     
     QMenu* fileMenu = menuBar()->addMenu("&File");
     QMenu* viewMenu = menuBar()->addMenu("&View");
+    QMenu* playbackMenu = menuBar()->addMenu("&Playback");
     QMenu* helpMenu = menuBar()->addMenu("&Help");
+
+    m_loopPreviewAction = playbackMenu->addAction("Loop Preview");
+    m_loopPreviewAction->setCheckable(true);
+    connect(m_loopPreviewAction, &QAction::toggled, this, [this](bool checked) {
+        waveformPreview->setLooping(checked);
+        regionPreviewWindow->setLooping(checked);
+    });
     
 
     viewMenu->addAction("View Command", [this]() {
@@ -1728,11 +1736,12 @@ void MainWindow::onPreviewFinished(const QString& audioFile, const QString& wave
     scanProgressBar->setVisible(false);
     statusLabel->setText(audioFile);
     statusLabel->setStyleSheet("QLabel { font-size: 9px ;}");
-    
+
     // Load preview into both waveform widgets
+    // (setPreviewFile auto-plays if looping is active)
     waveformPreview->setPreviewFile(audioFile, waveformFile);
     regionPreviewWindow->setPreviewFile(audioFile, waveformFile);
-    
+
     qDebug() << "Preview finished:" << audioFile << waveformFile;
 }
 

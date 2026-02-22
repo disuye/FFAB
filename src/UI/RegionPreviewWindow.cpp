@@ -158,14 +158,27 @@ void RegionPreviewWindow::setPreviewFile(const QString& audioFilePath, const QSt
         return;
     }
     
-    // Force reload media
+    // Force reload media — suppress loop reaction to stop during reload
+    m_suppressLoop = true;
     mediaPlayer->stop();
     mediaPlayer->setSource(QUrl());
     mediaPlayer->setSource(QUrl::fromLocalFile(audioFilePath));
-    
+    m_suppressLoop = false;
+
     playButton->setEnabled(true);
-    playButton->setIcon(Sym::playIcon());
     m_playheadMs = 0;
+
+    if (m_looping) {
+        // Auto-play immediately when loop mode is active
+        emit playbackStarted();
+        if (hasRegion()) {
+            mediaPlayer->setPosition(m_regionStartMs);
+        }
+        mediaPlayer->play();
+        playButton->setIcon(Sym::stopIcon());
+    } else {
+        playButton->setIcon(Sym::playIcon());
+    }
 
     updateDisplay();
 
@@ -173,6 +186,7 @@ void RegionPreviewWindow::setPreviewFile(const QString& audioFilePath, const QSt
 }
 
 void RegionPreviewWindow::clearPreview() {
+    m_suppressLoop = true;
     mediaPlayer->stop();
     mediaPlayer->setSource(QUrl());
     
@@ -204,6 +218,14 @@ qint64 RegionPreviewWindow::regionEndMs() const {
 }
 
 void RegionPreviewWindow::clearRegion() {
+    // If looping was clamped to this region, stop playback — no valid loop point anymore
+    if (m_looping && hasRegion() && mediaPlayer->playbackState() == QMediaPlayer::PlayingState) {
+        m_suppressLoop = true;
+        mediaPlayer->stop();
+        mediaPlayer->setPosition(0);
+        m_playheadMs = 0;
+        playButton->setIcon(Sym::playIcon());
+    }
     m_regionStartMs = -1;
     m_regionEndMs = -1;
     m_isDragging = false;
@@ -447,7 +469,8 @@ void RegionPreviewWindow::handleCanvasMouseRelease(QMouseEvent* event) {
 
 void RegionPreviewWindow::onPlayClicked() {
     if (mediaPlayer->playbackState() == QMediaPlayer::PlayingState) {
-        // Stop and reset
+        // User-initiated stop — suppress loop restart
+        m_suppressLoop = true;
         mediaPlayer->stop();
         mediaPlayer->setPosition(0);
         playButton->setIcon(Sym::playIcon());
@@ -466,6 +489,7 @@ void RegionPreviewWindow::onPlayClicked() {
 
 void RegionPreviewWindow::stopPlayback() {
     if (mediaPlayer->playbackState() != QMediaPlayer::StoppedState) {
+        m_suppressLoop = true;
         mediaPlayer->stop();
         mediaPlayer->setPosition(0);
         playButton->setIcon(Sym::playIcon());
@@ -499,12 +523,20 @@ void RegionPreviewWindow::playFromRegionOrStart() {
 
 void RegionPreviewWindow::onPositionChanged(qint64 position) {
     m_playheadMs = position;
-    
-    // If region active, stop at region end
+
+    // Region boundary handling
     if (hasRegion() && position >= m_regionEndMs) {
-        mediaPlayer->stop();
-        m_playheadMs = m_regionEndMs;
-        playButton->setIcon(Sym::playIcon());
+        if (m_looping) {
+            // Loop: seek back to region start (keep playing — don't stop)
+            mediaPlayer->setPosition(m_regionStartMs);
+            m_playheadMs = m_regionStartMs;
+        } else {
+            // No loop: stop at region end
+            m_suppressLoop = true;
+            mediaPlayer->stop();
+            m_playheadMs = m_regionEndMs;
+            playButton->setIcon(Sym::playIcon());
+        }
     }
 
     updateTimeLabels();
@@ -524,8 +556,17 @@ void RegionPreviewWindow::onDurationChanged(qint64 newDuration) {
 
 void RegionPreviewWindow::onPlaybackStateChanged(QMediaPlayer::PlaybackState state) {
     if (state == QMediaPlayer::StoppedState) {
-        playButton->setIcon(Sym::playIcon());
-        updateDisplay();
+        if (m_looping && !m_suppressLoop && playButton->isEnabled()) {
+            // Natural end of file (no region, or region handling didn't catch it) — loop from start
+            emit playbackStarted();
+            mediaPlayer->setPosition(0);
+            mediaPlayer->play();
+            // playButton stays as stopIcon
+        } else {
+            m_suppressLoop = false;
+            playButton->setIcon(Sym::playIcon());
+            updateDisplay();
+        }
     }
 }
 
