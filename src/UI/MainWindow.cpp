@@ -1738,9 +1738,17 @@ void MainWindow::onPreviewFinished(const QString& audioFile, const QString& wave
     statusLabel->setStyleSheet("QLabel { font-size: 9px ;}");
 
     // Load preview into both waveform widgets
-    // (setPreviewFile auto-plays if looping is active)
     waveformPreview->setPreviewFile(audioFile, waveformFile);
     regionPreviewWindow->setPreviewFile(audioFile, waveformFile);
+
+    // Single controlled auto-play when loop mode is active
+    if (m_loopPreviewAction && m_loopPreviewAction->isChecked()) {
+        if (regionWindowIsActive()) {
+            regionPreviewWindow->playFromRegionOrStart();
+        } else {
+            waveformPreview->play();
+        }
+    }
 
     qDebug() << "Preview finished:" << audioFile << waveformFile;
 }

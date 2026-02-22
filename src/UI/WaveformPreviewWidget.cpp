@@ -101,15 +101,7 @@ void WaveformPreviewWidget::setPreviewFile(const QString& audioFilePath, const Q
 
     // Enable playback controls
     playButton->setEnabled(true);
-
-    if (m_looping) {
-        // Auto-play immediately when loop mode is active
-        emit playbackStarted();
-        mediaPlayer->play();
-        playButton->setIcon(Sym::stopIcon());
-    } else {
-        playButton->setIcon(Sym::playIcon());
-    }
+    playButton->setIcon(Sym::playIcon());
 
     qDebug() << "Preview loaded:" << audioFilePath;
 }

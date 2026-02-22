@@ -167,18 +167,7 @@ void RegionPreviewWindow::setPreviewFile(const QString& audioFilePath, const QSt
 
     playButton->setEnabled(true);
     m_playheadMs = 0;
-
-    if (m_looping) {
-        // Auto-play immediately when loop mode is active
-        emit playbackStarted();
-        if (hasRegion()) {
-            mediaPlayer->setPosition(m_regionStartMs);
-        }
-        mediaPlayer->play();
-        playButton->setIcon(Sym::stopIcon());
-    } else {
-        playButton->setIcon(Sym::playIcon());
-    }
+    playButton->setIcon(Sym::playIcon());
 
     updateDisplay();
 
