@@ -13,7 +13,7 @@
 #include <QFileInfo>
 
 static const QString API_URL =
-    "https://api.github.com/repos/disuye/FFAB-releases/releases/latest";
+    "https://api.github.com/repos/disuye/FFAB/releases/latest";
 
 UpdateChecker::UpdateChecker(QObject* parent)
     : QObject(parent)

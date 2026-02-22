@@ -25,6 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract version
+        run: |
+          VERSION=$(sed -n 's/.*VERSION_STR "\([^"]*\)".*/\1/p' src/Core/AppConfig.h)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Install Qt 6.7
         uses: jurplel/install-qt-action@v4
         with:
@@ -89,12 +94,13 @@ jobs:
             --icon-file AppDir/usr/share/icons/hicolor/512x512/apps/ffab.png \
             --output appimage
 
-          mv FFAB-*.AppImage FFAB-${{ github.ref_name }}-linux-${{ matrix.arch }}.AppImage
+          mv FFAB-*.AppImage FFABv${{ env.VERSION }}-linux-${{ matrix.arch }}.AppImage
+
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ffab-linux-${{ matrix.arch }}
-          path: 'FFAB-*.AppImage'
+          name: FFABv${{ env.VERSION }}-linux-${{ matrix.arch }}
+          path: 'FFABv*.AppImage'
 
   release:
     needs: [build]
@@ -107,6 +113,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ffab-linux-x86_64/*.AppImage
-            ffab-linux-arm64/*.AppImage
+            FFABv*/*.AppImage
           draft: true

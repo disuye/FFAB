@@ -57,6 +57,9 @@ echo ""
 echo "📦 Packaging DMG..."
 "$MACDEPLOYQT" FFAB.app -dmg
 echo ""
+VERSION=$(sed -n 's/.*VERSION_STR "\([^"]*\)".*/\1/p' "$PROJECT_DIR/src/Core/AppConfig.h")
+mv "$BUILD_DIR/FFAB.dmg" "$BUILD_DIR/FFABv${VERSION}.dmg"
+echo "  DMG ready:  $BUILD_DIR/FFABv${VERSION}.dmg"
 
 echo "✓ macOS $ARCH_LABEL release build complete!"
 echo "  App bundle: $BUILD_DIR/FFAB.app"
