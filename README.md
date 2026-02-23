@@ -21,13 +21,13 @@ Check [Releases](https://github.com/disuye/FFAB/releases) for the latest DMG/ZIP
 #### macOS
 FFAB.app is not notarized by Apple and may be blocked by macOS Gatekeeper. 
 - Monterey & Sonoma, right click FFAB.app, click Open, click Confirm
-- Sequoia & Tahoe run this Terminal command: ```xattr -cr /Applications/FFAB.app```
+- Sequoia & Tahoe run this Terminal command:<br> ```xattr -cr /Applications/FFAB.app```
 
 #### Linux
 
 Audio preview player may fail on some Linux versions.
 - This can be fixed with community help!
-- Launch FFAB.AppImage with this Terminal command: ```GST_PLUGIN_SYSTEM_PATH=​/usr/lib/$(uname -m)​-linux-gnu/gstreamer-1.0 ./FFAB*.AppImage```
+- Launch FFAB.AppImage with this Terminal command:<br>```GST_PLUGIN_SYSTEM_PATH=​/usr/lib/$(uname -m)​-linux-gnu/gstreamer-1.0 ./FFAB*.AppImage```
 
 # Build From Source
 
