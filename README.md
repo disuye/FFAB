@@ -1,10 +1,10 @@
 # FFAB Overview
 
-![FFAB](./readme/ffab-mode-dark.png)
-
 FFAB is a cross-platform, complex audio batch processor, effects rack, command builder & graphical user interface for [FFmpeg](https://ffmpeg.org/download.html).
 
 More info here: [www.disuye.com/ffab](https://www.disuye.com/ffab/)
+
+![FFAB](./readme/ffab-mode-dark.png)
 
 <!--But only the sound related stuff.
 
