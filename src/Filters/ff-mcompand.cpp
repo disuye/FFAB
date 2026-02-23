@@ -14,6 +14,7 @@
 
 FFMcompand::FFMcompand() {
     position = Position::MIDDLE;
+    m_bands.reserve(MAX_BANDS);
 
     // 5 default bands matching the classic mcompand example
     // Band 1: 0–100 Hz
@@ -96,9 +97,20 @@ void FFMcompand::updateFFmpegFlags() {
         return;
     }
 
+    // Sort bands by crossover frequency for FFmpeg output
+    // (tab order in UI is independent — user sees creation order)
+    QList<const McompandBand*> sorted;
+    sorted.reserve(m_bands.size());
+    for (const McompandBand& band : m_bands)
+        sorted.append(&band);
+    std::sort(sorted.begin(), sorted.end(),
+              [](const McompandBand* a, const McompandBand* b) {
+                  return a->crossoverFreq < b->crossoverFreq;
+              });
+
     QStringList bandStrings;
-    for (const McompandBand& band : m_bands) {
-        bandStrings.append(bandToString(band));
+    for (const McompandBand* band : sorted) {
+        bandStrings.append(bandToString(*band));
     }
 
     QString args = bandStrings.join(" | ");
@@ -115,6 +127,7 @@ QString FFMcompand::buildFFmpegFlags() const {
 
 void FFMcompand::parseLegacyArgs(const QString& args) {
     m_bands.clear();
+    m_bands.reserve(MAX_BANDS);
 
     QStringList bandStrings = args.split("|");
     for (const QString& bandStr : bandStrings) {
@@ -634,19 +647,29 @@ void FFMcompand::toJSON(QJsonObject& json) const {
     json["type"] = "ff-mcompand";
     json["version"] = 2;
 
+    // Sort by crossover frequency for tidy output
+    QList<const McompandBand*> sorted;
+    sorted.reserve(m_bands.size());
+    for (const McompandBand& band : m_bands)
+        sorted.append(&band);
+    std::sort(sorted.begin(), sorted.end(),
+              [](const McompandBand* a, const McompandBand* b) {
+                  return a->crossoverFreq < b->crossoverFreq;
+              });
+
     QJsonArray bandsArray;
-    for (const McompandBand& band : m_bands) {
+    for (const McompandBand* band : sorted) {
         QJsonObject bandObj;
-        bandObj["attack"] = band.attack;
-        bandObj["decay"] = band.decay;
-        bandObj["softKnee"] = band.curveData.softKnee;
-        bandObj["crossoverFreq"] = band.crossoverFreq;
-        bandObj["gain"] = band.gain;
-        bandObj["volume"] = band.volume;
-        bandObj["delay"] = band.delay;
+        bandObj["attack"] = band->attack;
+        bandObj["decay"] = band->decay;
+        bandObj["softKnee"] = band->curveData.softKnee;
+        bandObj["crossoverFreq"] = band->crossoverFreq;
+        bandObj["gain"] = band->gain;
+        bandObj["volume"] = band->volume;
+        bandObj["delay"] = band->delay;
 
         QJsonArray pointsArray;
-        for (const CompandPoint& pt : band.curveData.points) {
+        for (const CompandPoint& pt : band->curveData.points) {
             QJsonObject ptObj;
             ptObj["in"] = pt.inputDb;
             ptObj["out"] = pt.outputDb;
@@ -664,6 +687,7 @@ void FFMcompand::fromJSON(const QJsonObject& json) {
 
     if (version >= 2) {
         m_bands.clear();
+        m_bands.reserve(MAX_BANDS);
         QJsonArray bandsArray = json["bands"].toArray();
         for (const QJsonValue& val : bandsArray) {
             QJsonObject bandObj = val.toObject();
