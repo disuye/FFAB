@@ -66,6 +66,7 @@ FFAB/
     │   ├── AppConfig.h
     │   ├── AudioFileScanner.h/cpp
     │   ├── BatchProcessor.h/cpp
+    │   ├── CompandBandData.h
     │   ├── Connection.h
     │   ├── DAGCommandBuilder.h/cpp <- DAG-based FFmpeg command builder (v1.0)
     │   ├── FFmpegDetector.h/cpp
@@ -101,6 +102,7 @@ FFAB/
     │   ├── BatchConfirmDialog.h/cpp
     │   ├── BatchSettingsWindow.h/cpp
     │   ├── ChannelEqWidget.h/cpp
+    │   ├── CompandCurveWidget.h/cpp
     │   ├── CollapsibleHelpSection.h/cpp
     │   ├── CommandViewWindow.h/cpp
     │   ├── FFmpegSetupDialog.h/cpp
