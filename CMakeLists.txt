@@ -317,6 +317,8 @@ add_executable(FFAB
     src/Filters/ChannelEqFilter.h
     src/UI/ChannelEqWidget.cpp
     src/UI/ChannelEqWidget.h
+    src/UI/CompandCurveWidget.cpp
+    src/UI/CompandCurveWidget.h
 
     # FFmpeg
     src/FFmpeg/FFmpegCommandBuilder.h
