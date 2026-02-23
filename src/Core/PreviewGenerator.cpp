@@ -30,6 +30,13 @@ void PreviewGenerator::generate(
     const QString& ffmpegPath,
     const QString& waveformSize) {
 
+    // Kill any in-flight processes before starting a new generation.
+    // Without this, a slow filter (e.g. AFIR convolution) can still be writing
+    // to a temp slot when a rapid second request overwrites audioProcess and
+    // tempAudioPath, causing onAudioProcessFinished to fire against the wrong
+    // process and generate a waveform from a partially-written file.
+    cancel();
+
     this->sourceFile = sourceFile;
     this->ffmpegPath = ffmpegPath;
     this->waveformSize = waveformSize;
