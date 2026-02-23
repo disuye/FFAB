@@ -94,6 +94,11 @@ QString DAGCommandBuilder::buildFilterFlags(
                 continue;
             }
 
+            // ANullSink is chain-terminal — treat as transparent for isLastFilter purposes
+            if (dynamic_cast<FFAnullsink*>(f)) {
+                continue;
+            }
+
             if (!f->buildFFmpegFlags().isEmpty()) {
                 return true;
             }
@@ -155,7 +160,8 @@ QString DAGCommandBuilder::buildFilterFlags(
 
             if ((!f->buildFFmpegFlags().isEmpty() &&
                  !dynamic_cast<AuxOutputFilter*>(f) &&
-                 !isImageOutputFilter(f)) ||
+                 !isImageOutputFilter(f) &&
+                 !dynamic_cast<FFAnullsink*>(f)) ||
                 dynamic_cast<AsplitFilter*>(f)) {
                 hasFiltersAfterBranchOutputs = true;
                 break;
@@ -494,11 +500,11 @@ QString DAGCommandBuilder::buildFilterFlags(
         }
 
         // ============================================================
-        // CASE 5: FFAnullsink — sink, no output
+        // CASE 5: FFAnullsink — omit from filter_complex entirely.
+        // hasFiltersAfter treats it as transparent, so the preceding
+        // filter already outputs [out]. Command layer adds -f null -.
         // ============================================================
         if (dynamic_cast<FFAnullsink*>(rawFilter)) {
-            QString sinkCmd = QString("%1anullsink").arg(mainChainInput);
-            filterStrs.append(sinkCmd);
             continue;
         }
 

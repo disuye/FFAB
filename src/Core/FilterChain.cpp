@@ -351,21 +351,21 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
             command += outputFilter->buildOutputMappingFlags() + " ";
         }
         
-        // Only add audio output mapping if chain doesn't end with sink
-        if (!chainEndsWithSink) {
-            command += "-map \"[out]\" ";
-        }
+        // [out] is always mapped — normal chains go to outputFile, sink chains to -f null -
+        command += "-map \"[out]\" ";
     } else if (videoPassthrough) {
         // No filter graph but video passthrough — still need video mapping
         command += outputFilter->buildOutputMappingFlags() + " ";
     }
-    
-    // Only add audio output file if chain doesn't end with sink
+
     if (!chainEndsWithSink) {
         if (outputFilter) command += outputFilter->buildFFmpegFlags() + " ";
         command += QString("\"%1\"").arg(outputFile);
+    } else {
+        // Analysis-only (ANullSink): null muxer discards audio — no file written
+        command += "-f null -";
     }
-    
+
     // ========== APPEND AUX OUTPUT MAPPINGS ==========
     int auxIndex = 1;
     for (size_t i = 1; i < filters.size() - 1; ++i) {
@@ -373,20 +373,20 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
             int filterId = filters[i]->getFilterId();
             QString filterIdLabel = getFilterHexLabel(filterId);
             QString auxBranchLabel = QString("[%1-auxOut]").arg(filterIdLabel);
-            
+
             // Build output file path
             QString auxOutputPath = buildAuxOutputPath(inputFile, auxOut, auxIndex);
-            
+
             // Append output mapping
             command += QString(" -map \"%1\" %2 \"%3\"")
                 .arg(auxBranchLabel)
                 .arg(auxOut->getCodecFlags())
                 .arg(auxOutputPath);
-            
+
             auxIndex++;
         }
     }
-    
+
     // ========== APPEND IMAGE OUTPUT MAPPINGS ==========
     for (size_t i = 1; i < filters.size() - 1; ++i) {
         if (isImageOutputFilter(filters[i].get())) {
@@ -440,21 +440,21 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
             command += outputFilter->buildOutputMappingFlags() + " ";
         }
         
-        // Only add audio output mapping if chain doesn't end with sink
-        if (!chainEndsWithSink) {
-            command += "-map \"[out]\" "; // quotes for View Command, stripped by QProcess
-        }
+        // [out] is always mapped — normal chains go to outputFile, sink chains to -f null -
+        command += "-map \"[out]\" "; // quotes for View Command, stripped by QProcess
     } else if (videoPassthrough) {
         // No filter graph but video passthrough — still need video mapping
         command += outputFilter->buildOutputMappingFlags() + " ";
     }
-    
-    // Only add audio output file if chain doesn't end with sink
+
     if (!chainEndsWithSink) {
         if (outputFilter) command += outputFilter->buildFFmpegFlags() + " ";
         command += QString("\"%1\"").arg(outputFile);
+    } else {
+        // Analysis-only (ANullSink): null muxer discards audio — no file written
+        command += "-f null -";
     }
-    
+
     // ========== APPEND AUX OUTPUT MAPPINGS ==========
     int auxIndex = 1;
     for (size_t i = 1; i < filters.size() - 1; ++i) {
@@ -1352,19 +1352,19 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile,
             command += outputFilter->buildOutputMappingFlags() + " ";
         }
         
-        // Only add audio output mapping if chain doesn't end with sink
-        if (!chainEndsWithSink) {
-            command += "-map \"[out]\" ";
-        }
+        // [out] is always mapped — normal chains go to outputFile, sink chains to -f null -
+        command += "-map \"[out]\" ";
     } else if (videoPassthrough) {
         // No filter graph but video passthrough — still need video mapping
         command += outputFilter->buildOutputMappingFlags() + " ";
     }
-    
-    // Only add audio output file if chain doesn't end with sink
+
     if (!chainEndsWithSink) {
         if (outputFilter) command += outputFilter->buildFFmpegFlags() + " ";
         command += QString("\"%1\"").arg(outputFile);
+    } else {
+        // Analysis-only (ANullSink): null muxer discards audio — no file written
+        command += "-f null -";
     }
     qDebug() << "Filter count:" << filters.size();
     qDebug() << "Muted positions:" << mutedPositions;
