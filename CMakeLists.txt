@@ -319,6 +319,7 @@ add_executable(FFAB
     src/UI/ChannelEqWidget.h
     src/UI/CompandCurveWidget.cpp
     src/UI/CompandCurveWidget.h
+    src/Core/CompandBandData.h
 
     # FFmpeg
     src/FFmpeg/FFmpegCommandBuilder.h

@@ -8,79 +8,30 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QGroupBox>
-#include <algorithm>
 
 FFCompand::FFCompand() {
     position = Position::MIDDLE;
 
-    m_points.append({-70.0, -70.0});
-    m_points.append({-60.0, -20.0});
-    m_points.append({1.0, 0.0});
+    m_bandData.points.append({-70.0, -70.0});
+    m_bandData.points.append({-60.0, -20.0});
+    m_bandData.points.append({1.0, 0.0});
 
     updateFFmpegFlags();
 }
 
-// ==================== POINT MANAGEMENT ====================
-
-void FFCompand::sortPoints() {
-    std::sort(m_points.begin(), m_points.end(),
-              [](const CompandPoint& a, const CompandPoint& b) {
-                  return a.inputDb < b.inputDb;
-              });
-}
-
-void FFCompand::addPoint(double inputDb, double outputDb) {
-    if (m_points.size() >= MAX_POINTS) return;
-
-    m_points.append({inputDb, outputDb});
-    sortPoints();
-    updateFFmpegFlags();
-    if (curveWidget) curveWidget->update();
-}
-
-void FFCompand::removePoint(int index) {
-    if (index < 0 || index >= m_points.size()) return;
-    if (m_points.size() <= 2) return;
-
-    m_points.removeAt(index);
-    updateFFmpegFlags();
-    if (curveWidget) curveWidget->update();
-}
-
-int FFCompand::updatePoint(int index, double inputDb, double outputDb) {
-    if (index < 0 || index >= m_points.size()) return index;
-
-    m_points[index].inputDb = inputDb;
-    m_points[index].outputDb = outputDb;
-
-    CompandPoint edited = m_points[index];
-    sortPoints();
-
-    // Find where the edited point ended up after sorting
-    int newIndex = index;
-    for (int i = 0; i < m_points.size(); ++i) {
-        if (qFuzzyCompare(m_points[i].inputDb, edited.inputDb) &&
-            qFuzzyCompare(m_points[i].outputDb, edited.outputDb)) {
-            newIndex = i;
-            break;
-        }
-    }
-
-    updateFFmpegFlags();
-    return newIndex;
-}
+// ==================== SOFT KNEE ====================
 
 void FFCompand::setSoftKnee(double knee) {
-    m_softKnee = qBound(0.01, knee, 48.0);
+    m_bandData.softKnee = qBound(0.01, knee, 48.0);
 
     if (softKneeSlider) {
         softKneeSlider->blockSignals(true);
-        softKneeSlider->setValue(static_cast<int>(m_softKnee * 100));
+        softKneeSlider->setValue(static_cast<int>(m_bandData.softKnee * 100));
         softKneeSlider->blockSignals(false);
     }
     if (softKneeSpinBox) {
         softKneeSpinBox->blockSignals(true);
-        softKneeSpinBox->setValue(m_softKnee);
+        softKneeSpinBox->setValue(m_bandData.softKnee);
         softKneeSpinBox->blockSignals(false);
     }
 
@@ -91,7 +42,7 @@ void FFCompand::setSoftKnee(double knee) {
 
 QString FFCompand::pointsToString() const {
     QStringList parts;
-    for (const CompandPoint& pt : m_points) {
+    for (const CompandPoint& pt : m_bandData.points) {
         parts.append(QString("%1/%2")
                      .arg(pt.inputDb, 0, 'g', 6)
                      .arg(pt.outputDb, 0, 'g', 6));
@@ -100,7 +51,7 @@ QString FFCompand::pointsToString() const {
 }
 
 void FFCompand::parsePointsString(const QString& str) {
-    m_points.clear();
+    m_bandData.points.clear();
     QStringList pairs = str.split("|", Qt::SkipEmptyParts);
     for (const QString& pair : pairs) {
         QStringList values = pair.split("/");
@@ -108,10 +59,10 @@ void FFCompand::parsePointsString(const QString& str) {
             CompandPoint pt;
             pt.inputDb = values[0].toDouble();
             pt.outputDb = values[1].toDouble();
-            m_points.append(pt);
+            m_bandData.points.append(pt);
         }
     }
-    sortPoints();
+    m_bandData.sortPoints();
 }
 
 // ==================== FFMPEG FLAGS ====================
@@ -121,7 +72,7 @@ void FFCompand::updateFFmpegFlags() {
                       .arg(m_attack, 0, 'f', 4)
                       .arg(m_decay, 0, 'f', 4)
                       .arg(pointsToString())
-                      .arg(m_softKnee, 0, 'f', 2)
+                      .arg(m_bandData.softKnee, 0, 'f', 2)
                       .arg(m_gain, 0, 'f', 1)
                       .arg(m_volume, 0, 'f', 1)
                       .arg(m_delay, 0, 'f', 2);
@@ -143,9 +94,24 @@ QWidget* FFCompand::getParametersWidget() {
     mainLayout->setContentsMargins(8, 8, 8, 8);
 
     // ===== CURVE WIDGET =====
-    curveWidget = new CompandCurveWidget(this);
+    curveWidget = new CompandCurveWidget(&m_bandData);
     curveWidget->setMinimumHeight(250);
     mainLayout->addWidget(curveWidget, 1);
+
+    // Connect dataChanged: sync knee slider/spinbox + rebuild flags
+    connect(curveWidget, &CompandCurveWidget::dataChanged, this, [this]() {
+        if (softKneeSlider) {
+            softKneeSlider->blockSignals(true);
+            softKneeSlider->setValue(static_cast<int>(m_bandData.softKnee * 100));
+            softKneeSlider->blockSignals(false);
+        }
+        if (softKneeSpinBox) {
+            softKneeSpinBox->blockSignals(true);
+            softKneeSpinBox->setValue(m_bandData.softKnee);
+            softKneeSpinBox->blockSignals(false);
+        }
+        updateFFmpegFlags();
+    });
 
     auto helpLabel = new QLabel(
         "<small><b>Controls:</b> Alt+Click: add/delete point | "
@@ -211,7 +177,7 @@ QWidget* FFCompand::getParametersWidget() {
     softKneeSpinBox = new QDoubleSpinBox();
     softKneeSpinBox->setMinimum(0.01);
     softKneeSpinBox->setMaximum(48.0);
-    softKneeSpinBox->setValue(m_softKnee);
+    softKneeSpinBox->setValue(m_bandData.softKnee);
     softKneeSpinBox->setDecimals(2);
     softKneeSpinBox->setSingleStep(0.5);
     softKneeSpinBox->setSuffix(" dB");
@@ -222,7 +188,7 @@ QWidget* FFCompand::getParametersWidget() {
     softKneeSlider = new QSlider(Qt::Horizontal);
     softKneeSlider->setMinimum(1);
     softKneeSlider->setMaximum(4800);
-    softKneeSlider->setValue(static_cast<int>(m_softKnee * 100));
+    softKneeSlider->setValue(static_cast<int>(m_bandData.softKnee * 100));
     kneeLayout->addWidget(softKneeSlider, 1);
 
     kneeLayout->addWidget(new QLabel("48"));
@@ -342,16 +308,16 @@ QWidget* FFCompand::getParametersWidget() {
 
     // Soft Knee
     connect(softKneeSlider, &QSlider::valueChanged, [this](int value) {
-        m_softKnee = value / 100.0;
+        m_bandData.softKnee = value / 100.0;
         softKneeSpinBox->blockSignals(true);
-        softKneeSpinBox->setValue(m_softKnee);
+        softKneeSpinBox->setValue(m_bandData.softKnee);
         softKneeSpinBox->blockSignals(false);
         updateFFmpegFlags();
         if (curveWidget) curveWidget->update();
     });
     connect(softKneeSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             [this](double value) {
-        m_softKnee = value;
+        m_bandData.softKnee = value;
         softKneeSlider->blockSignals(true);
         softKneeSlider->setValue(static_cast<int>(value * 100));
         softKneeSlider->blockSignals(false);
@@ -423,13 +389,13 @@ void FFCompand::toJSON(QJsonObject& json) const {
 
     json["attack"] = m_attack;
     json["decay"] = m_decay;
-    json["softKnee"] = m_softKnee;
+    json["softKnee"] = m_bandData.softKnee;
     json["gain"] = m_gain;
     json["volume"] = m_volume;
     json["delay"] = m_delay;
 
     QJsonArray pointsArray;
-    for (const CompandPoint& pt : m_points) {
+    for (const CompandPoint& pt : m_bandData.points) {
         QJsonObject ptObj;
         ptObj["in"] = pt.inputDb;
         ptObj["out"] = pt.outputDb;
@@ -443,22 +409,22 @@ void FFCompand::fromJSON(const QJsonObject& json) {
 
     if (version >= 2) {
         m_attack = json["attack"].toDouble(0.05);
-        m_decay = json["decay"].toDouble(0.01);
-        m_softKnee = json["softKnee"].toDouble(0.01);
+        m_decay = json["decay"].toDouble(0.03);
+        m_bandData.softKnee = json["softKnee"].toDouble(0.01);
         m_gain = json["gain"].toDouble(-12.0);
         m_volume = json["volume"].toDouble(-90.0);
-        m_delay = json["delay"].toDouble(0.0);
+        m_delay = json["delay"].toDouble(0.01);
 
-        m_points.clear();
+        m_bandData.points.clear();
         QJsonArray pointsArray = json["transferPoints"].toArray();
         for (const QJsonValue& val : pointsArray) {
             QJsonObject ptObj = val.toObject();
             CompandPoint pt;
             pt.inputDb = ptObj["in"].toDouble(0.0);
             pt.outputDb = ptObj["out"].toDouble(0.0);
-            m_points.append(pt);
+            m_bandData.points.append(pt);
         }
-        sortPoints();
+        m_bandData.sortPoints();
     } else {
         // Legacy v1 format
         QString attacksStr = json["attacks"].toString("0.05");
@@ -471,17 +437,17 @@ void FFCompand::fromJSON(const QJsonObject& json) {
         QString pointsStr = json["points"].toString("-70/-70|-60/-20|1/0");
         parsePointsString(pointsStr);
 
-        m_softKnee = 0.01;
+        m_bandData.softKnee = 0.01;
         m_gain = json["gain"].toDouble(0.0);
         m_volume = json["volume"].toDouble(0.0);
         m_delay = json["delay"].toDouble(0.0);
     }
 
-    if (m_points.size() < 2) {
-        m_points.clear();
-        m_points.append({-70.0, -70.0});
-        m_points.append({-60.0, -20.0});
-        m_points.append({1.0, 0.0});
+    if (m_bandData.points.size() < 2) {
+        m_bandData.points.clear();
+        m_bandData.points.append({-70.0, -70.0});
+        m_bandData.points.append({-60.0, -20.0});
+        m_bandData.points.append({1.0, 0.0});
     }
 
     updateFFmpegFlags();

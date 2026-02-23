@@ -3,13 +3,16 @@
 #include <QWidget>
 #include <QList>
 
-class FFCompand;
 struct CompandPoint;
+struct CompandBandData;
 
 class CompandCurveWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit CompandCurveWidget(FFCompand* filter, QWidget* parent = nullptr);
+    explicit CompandCurveWidget(CompandBandData* data, QWidget* parent = nullptr);
+
+signals:
+    void dataChanged();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -51,5 +54,5 @@ private:
     static constexpr int NODE_RADIUS = 8;
     static constexpr int HIT_RADIUS = 12;
 
-    FFCompand* m_filter;
+    CompandBandData* m_data;
 };

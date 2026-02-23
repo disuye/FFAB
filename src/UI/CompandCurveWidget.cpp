@@ -1,12 +1,12 @@
 #include "CompandCurveWidget.h"
-#include "ff-compand.h"
+#include "CompandBandData.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
 #include <cmath>
 
-CompandCurveWidget::CompandCurveWidget(FFCompand* filter, QWidget* parent)
-    : QWidget(parent), m_filter(filter)
+CompandCurveWidget::CompandCurveWidget(CompandBandData* data, QWidget* parent)
+    : QWidget(parent), m_data(data)
 {
     setMinimumSize(300, 300);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -165,10 +165,10 @@ void CompandCurveWidget::drawUnityLine(QPainter& painter) {
 }
 
 void CompandCurveWidget::drawCurve(QPainter& painter) {
-    const QList<CompandPoint>& points = m_filter->transferPoints();
+    const QList<CompandPoint>& points = m_data->points;
     if (points.size() < 2) return;
 
-    double knee = m_filter->softKnee();
+    double knee = m_data->softKnee;
 
     QPainterPath curvePath;
     QPainterPath fillPath;
@@ -204,7 +204,7 @@ void CompandCurveWidget::drawCurve(QPainter& painter) {
 }
 
 void CompandCurveWidget::drawNodes(QPainter& painter) {
-    const QList<CompandPoint>& points = m_filter->transferPoints();
+    const QList<CompandPoint>& points = m_data->points;
 
     for (int i = 0; i < points.size(); ++i) {
         QPointF center = dbToPixel(points[i].inputDb, points[i].outputDb);
@@ -221,18 +221,18 @@ void CompandCurveWidget::drawNodes(QPainter& painter) {
         painter.drawEllipse(center, NODE_RADIUS, NODE_RADIUS);
 
         // Knee indicator for interior points
-        if (m_filter->softKnee() > 0.5) {
+        if (m_data->softKnee > 0.5) {
             drawKneeIndicator(painter, i);
         }
     }
 }
 
 void CompandCurveWidget::drawKneeIndicator(QPainter& painter, int nodeIndex) {
-    const QList<CompandPoint>& points = m_filter->transferPoints();
+    const QList<CompandPoint>& points = m_data->points;
     // Only show on interior points (not first or last)
     if (nodeIndex <= 0 || nodeIndex >= points.size() - 1) return;
 
-    double halfKnee = m_filter->softKnee() / 2.0;
+    double halfKnee = m_data->softKnee / 2.0;
     double x0 = points[nodeIndex].inputDb;
 
     // Match the symmetric clamping from evaluateTransferFunction
@@ -253,7 +253,7 @@ void CompandCurveWidget::drawKneeIndicator(QPainter& painter, int nodeIndex) {
 // ==================== HIT TESTING ====================
 
 int CompandCurveWidget::hitTestNode(const QPoint& pos) const {
-    const QList<CompandPoint>& points = m_filter->transferPoints();
+    const QList<CompandPoint>& points = m_data->points;
 
     for (int i = points.size() - 1; i >= 0; --i) {
         QPointF nodePos = dbToPixel(points[i].inputDb, points[i].outputDb);
@@ -275,7 +275,8 @@ void CompandCurveWidget::mousePressEvent(QMouseEvent* event) {
 
         // Alt+Click on node = Delete node
         if ((mods & Qt::AltModifier) && hitNode >= 0) {
-            m_filter->removePoint(hitNode);
+            m_data->removePoint(hitNode);
+            emit dataChanged();
             update();
             return;
         }
@@ -285,7 +286,7 @@ void CompandCurveWidget::mousePressEvent(QMouseEvent* event) {
             m_dragMode = DragMode::AdjustKnee;
             m_dragNode = hitNode;
             m_dragStart = event->pos();
-            m_dragStartKnee = m_filter->softKnee();
+            m_dragStartKnee = m_data->softKnee;
             return;
         }
 
@@ -301,7 +302,8 @@ void CompandCurveWidget::mousePressEvent(QMouseEvent* event) {
         if (mods & Qt::AltModifier) {
             double inputDb = pixelToInputDb(event->pos().x());
             double outputDb = pixelToOutputDb(event->pos().y());
-            m_filter->addPoint(inputDb, outputDb);
+            m_data->addPoint(inputDb, outputDb);
+            emit dataChanged();
             update();
             return;
         }
@@ -315,13 +317,15 @@ void CompandCurveWidget::mouseMoveEvent(QMouseEvent* event) {
         double inputDb = qBound(DB_MIN, pixelToInputDb(event->pos().x()), DB_MAX);
         double outputDb = qBound(DB_MIN, pixelToOutputDb(event->pos().y()), DB_MAX);
 
-        m_dragNode = m_filter->updatePoint(m_dragNode, inputDb, outputDb);
+        m_dragNode = m_data->updatePoint(m_dragNode, inputDb, outputDb);
+        emit dataChanged();
         update();
     }
     else if (m_dragMode == DragMode::AdjustKnee && m_dragNode >= 0) {
         int deltaY = m_dragStart.y() - event->pos().y();
         double newKnee = qBound(0.01, m_dragStartKnee + deltaY * 0.2, 48.0);
-        m_filter->setSoftKnee(newKnee);
+        m_data->softKnee = newKnee;
+        emit dataChanged();
         update();
     }
 
