@@ -2,11 +2,26 @@
 #include <QRegularExpression>
 #include <QDebug>
 
+// Returns true for lines produced by FFmpeg's -progress pipe:2 (key=value, no spaces).
+// These are parsed for the UI but are noise in a log file at low verbosity levels.
+static bool isProgressPipeLine(const QString& line) {
+    if (line.isEmpty() || line.contains(' ')) return false;
+    int eq = line.indexOf('=');
+    if (eq <= 0) return false;
+    for (int i = 0; i < eq; ++i) {
+        QChar c = line[i];
+        if (!c.isLetterOrNumber() && c != '_') return false;
+    }
+    return true;
+}
+
 FFmpegRunner::FFmpegRunner(QObject* parent)
     : QObject(parent)
     , process(new QProcess(this))
     , status(Status::Idle)
     , totalDuration(0.0)
+    , m_lastSpeed(0.0)
+    , m_suppressProgressLines(true)   // Default: keep logs clean; caller opts in for verbose
 {
     // Connect process signals
     connect(process, &QProcess::started, this, &FFmpegRunner::onProcessStarted);
@@ -34,6 +49,7 @@ void FFmpegRunner::runCommand(const QString& command, const QString& ffmpegPath)
     status = Status::Running;
     lastError.clear();
     totalDuration = 0.0;
+    m_lastSpeed = 0.0;
     m_stderrBuffer.clear();
     
     qDebug() << "FFmpegRunner: Executing:" << ffmpegPath << command;
@@ -156,17 +172,22 @@ void FFmpegRunner::onReadyReadStandardError() {
     QByteArray rawData = process->readAllStandardError();
     m_stderrBuffer += QString::fromUtf8(rawData);
 
-    int lastNewline = m_stderrBuffer.lastIndexOf('\n');
-    if (lastNewline < 0) return;  // No complete lines yet
+    // FFmpeg terminates live progress lines with \r (overwrites in terminal)
+    // and metadata/summary lines with \n. Accept either as a line boundary.
+    int lastTerminator = qMax(m_stderrBuffer.lastIndexOf('\n'),
+                              m_stderrBuffer.lastIndexOf('\r'));
+    if (lastTerminator < 0) return;  // No complete lines yet
 
     // Extract all complete lines, keep incomplete tail
-    QString completeLines = m_stderrBuffer.left(lastNewline + 1);
-    m_stderrBuffer = m_stderrBuffer.mid(lastNewline + 1);
+    QString completeLines = m_stderrBuffer.left(lastTerminator + 1);
+    m_stderrBuffer = m_stderrBuffer.mid(lastTerminator + 1);
 
-    emit outputReceived(completeLines);
+    // Split on both \r and \n so \r-only progress lines are parsed live
+    QStringList lines = completeLines.split(QRegularExpression("[\\r\\n]"), Qt::SkipEmptyParts);
 
-    // FFmpeg writes progress to stderr
-    QStringList lines = completeLines.split('\n');
+    // Build filtered output: omit -progress pipe:2 key=value lines at low verbosity.
+    // At verbose/debug level m_suppressProgressLines is false, so everything passes through.
+    QString logOutput;
     for (const QString& line : lines) {
         parseProgressLine(line);
 
@@ -183,45 +204,71 @@ void FFmpegRunner::onReadyReadStandardError() {
                 qDebug() << "FFmpegRunner: Detected total duration:" << totalDuration << "seconds";
             }
         }
+
+        if (!m_suppressProgressLines || !isProgressPipeLine(line)) {
+            logOutput += line + '\n';
+        }
+    }
+
+    if (!logOutput.isEmpty()) {
+        emit outputReceived(logOutput);
     }
 }
 
 // ========== PROGRESS PARSING ==========
 
 void FFmpegRunner::parseProgressLine(const QString& line) {
-    // FFmpeg progress line format:
-    // "frame=  123 fps= 0.0 q=-1.0 size=    1024kB time=00:00:05.12 bitrate=1638.4kbits/s speed=10.2x"
-    
-    if (!line.contains("time=")) return;
-    
+    // Handles two FFmpeg output formats:
+    //
+    // Classic -stats (single line, \r-terminated):
+    //   "frame= 123 fps=25.0 q=-1.0 size= 1234kB time=00:00:05.12 bitrate=1638kbits/s speed=4.23x"
+    //
+    // -progress pipe:2 (one key=value per line, \n-terminated):
+    //   out_time=00:00:05.123456   ← "time=" is a substring of "out_time="
+    //   speed=4.23x                ← separate line, no "time=" present
+    //   progress=continue
+
+    if (!line.contains("time=")) {
+        // Not a time line — may be a speed-only line from -progress pipe:2
+        if (line.contains("speed=")) {
+            QRegularExpression speedRe("speed=\\s*(\\d+\\.?\\d*)x");
+            QRegularExpressionMatch m = speedRe.match(line);
+            if (m.hasMatch()) {
+                m_lastSpeed = m.captured(1).toDouble();
+            }
+        }
+        return;
+    }
+
     ProgressInfo info;
     info.currentTime = 0.0;
-    info.totalTime = totalDuration;
-    info.speed = 0.0;
+    info.totalTime   = totalDuration;
+    info.speed       = m_lastSpeed;   // Seed with last-seen speed
     info.progressPercent = 0;
-    info.timeString = "00:00:00.00";
-    
-    // Extract time
+    info.timeString  = "00:00:00.00";
+
+    // Extract time — works for both "time=HH:MM:SS.ff" and "out_time=HH:MM:SS.ffffff"
+    // because "out_time=" contains "time=" as a trailing substring.
     QRegularExpression timeRe("time=(\\d{2}):(\\d{2}):(\\d{2}\\.\\d{2})");
     QRegularExpressionMatch timeMatch = timeRe.match(line);
     if (timeMatch.hasMatch()) {
-        info.timeString = timeMatch.captured(0).mid(5);  // Remove "time="
+        info.timeString  = timeMatch.captured(0).mid(5);  // Remove "time="
         info.currentTime = parseTimeString(info.timeString);
     }
-    
-    // Extract speed
+
+    // Also parse speed if it appears on the same line (classic -stats format)
     QRegularExpression speedRe("speed=\\s*(\\d+\\.?\\d*)x");
     QRegularExpressionMatch speedMatch = speedRe.match(line);
     if (speedMatch.hasMatch()) {
         info.speed = speedMatch.captured(1).toDouble();
+        m_lastSpeed = info.speed;
     }
-    
-    // Calculate progress percentage
+
     if (totalDuration > 0.0 && info.currentTime > 0.0) {
         info.progressPercent = static_cast<int>((info.currentTime / totalDuration) * 100);
         info.progressPercent = qMin(info.progressPercent, 100);
     }
-    
+
     emit progress(info);
 }
 

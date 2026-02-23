@@ -139,11 +139,9 @@ QString LogSettings::buildFlags() const {
     args << "-y";
     if (!showBanner) args << "-hide_banner";
     args << "-loglevel" << logLevel;
-    if (showStats) {
-        args << "-stats";
-    } else {
-        args << "-nostats";
-    }
+    // Use -progress pipe:2 for reliable \n-terminated machine-readable output.
+    // -nostats suppresses the redundant human-readable stats line.
+    args << "-progress" << "pipe:2" << "-nostats";
     return args.join(" ");
 }
 

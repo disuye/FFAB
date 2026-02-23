@@ -1333,32 +1333,42 @@ void MainWindow::onBatchStarted(int totalFiles) {
     processButton->setEnabled(false);
     processButton->setToolTip("Pause or quit the running Batch\nbefore clicking Process Files");
     scanProgressBar->setVisible(true);
-    scanProgressBar->setRange(0, 100);
+    scanProgressBar->setRange(0, 10000);
     scanProgressBar->setValue(0);
     statusLabel->setText(QString("Processing %1 files...").arg(totalFiles));
     
     qDebug() << "Batch started:" << totalFiles << "files";
 }
 
-void MainWindow::onFileStarted(const QString& fileName, int fileNumber, int totalFiles) {
+void MainWindow::onFileStarted(const QString& fileName, int fileNumber, int totalFiles,
+                               int workerIndex) {
+    // MainWindow status bar tracks worker 0 only
+    if (workerIndex != 0) return;
+
     statusLabel->setText(QString("Processing %1/%2: %3")
         .arg(fileNumber)
         .arg(totalFiles)
         .arg(fileName));
-    
-   scanProgressBar->setValue(0);
-    
+    scanProgressBar->setRange(0, 0);  // Indeterminate / pulsing until a real percentage arrives
+
     qDebug() << "Processing file" << fileNumber << "/" << totalFiles << ":" << fileName;
 }
 
-void MainWindow::onFileProgress(const FFmpegRunner::ProgressInfo& info) {
-   scanProgressBar->setValue(info.progressPercent);
-    
-    QString speedStr = QString::number(info.speed, 'f', 1) + "x";
-    QString totalTimeStr = info.totalTime > 0 
+void MainWindow::onFileProgress(const FFmpegRunner::ProgressInfo& info, int workerIndex) {
+    // MainWindow status bar tracks worker 0 only
+    if (workerIndex != 0) return;
+
+    if (info.totalTime > 0.0 && info.currentTime > 0.0) {
+        if (scanProgressBar->maximum() == 0) scanProgressBar->setRange(0, 10000);
+        scanProgressBar->setValue(qMax(1, static_cast<int>((info.currentTime / info.totalTime) * 10000)));
+    }
+    // If no valid timing data yet, the bar stays in indeterminate (pulsing) mode
+
+    QString speedStr    = QString::number(info.speed, 'f', 1) + "x";
+    QString totalTimeStr = info.totalTime > 0
         ? QString::number(info.totalTime, 'f', 1) + "s"
         : "unknown";
-    
+
     statusLabel->setText(
         QString("Progress: %1 / %2 (Speed: %3)")
         .arg(info.timeString)
@@ -1367,7 +1377,7 @@ void MainWindow::onFileProgress(const FFmpegRunner::ProgressInfo& info) {
     );
 }
 
-void MainWindow::onFileFinished(const QString& fileName, bool success) {
+void MainWindow::onFileFinished(const QString& fileName, bool success, int /*workerIndex*/) {
     if (success) {
         qDebug() << "Successfully processed:" << fileName;
     } else {
@@ -1377,6 +1387,7 @@ void MainWindow::onFileFinished(const QString& fileName, bool success) {
 
 void MainWindow::onBatchFinished(int completed, int failed) {
     processButton->setEnabled(true);
+   scanProgressBar->setRange(0, 10000);  // Reset from indeterminate if needed
    scanProgressBar->setVisible(false);
    scanProgressBar->setValue(0);
     

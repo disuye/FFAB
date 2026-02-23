@@ -93,9 +93,9 @@ signals:
 public slots:
     // Batch processor signal handlers
     void onBatchStarted(int totalFiles);
-    void onFileStarted(const QString& fileName, int fileNumber, int totalFiles);
-    void onFileProgress(const FFmpegRunner::ProgressInfo& info);
-    void onFileFinished(const QString& fileName, bool success);
+    void onFileStarted(const QString& fileName, int fileNumber, int totalFiles, int workerIndex);
+    void onFileProgress(const FFmpegRunner::ProgressInfo& info, int workerIndex);
+    void onFileFinished(const QString& fileName, bool success, int workerIndex);
     void onBatchFinished(int completed, int failed);
     
 protected:
@@ -161,13 +161,25 @@ private:
     QLabel* progressDetailLabel = nullptr;
     QLabel* elapsedLabel = nullptr;
     QLabel* remainingLabel = nullptr;
-    QLabel* speedLabel = nullptr;
+    // QLabel* speedLabel = nullptr;  // hidden — per-worker speed isn't meaningful as aggregate
     QLabel* succeededLabel = nullptr;
     QLabel* failedLabel = nullptr;
     QPushButton* pauseButton = nullptr;
     QPushButton* resumeButton = nullptr;
     QPushButton* cancelButton = nullptr;
-    
+
+    // Per-worker instance rows
+    struct WorkerRow {
+        QWidget*      container = nullptr;
+        QProgressBar* bar       = nullptr;
+    };
+    QVector<WorkerRow> m_workerRows;
+    QWidget*  m_instanceSection      = nullptr;  // VBox container for rows
+    QVBoxLayout* m_instanceLayout    = nullptr;
+    QLabel*   m_instanceHeaderLabel  = nullptr;
+    QLabel*   m_instanceFooterLabel  = nullptr;
+    int       m_batchWorkerCount     = 1;
+
     // Progress state
     int totalFiles = 0;
     int completedFiles = 0;

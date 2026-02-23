@@ -214,7 +214,11 @@ void FileListWidget::populateSingleRow(int i) {
                     int origIdx = filenameItem->data(Qt::UserRole).toInt();
                     if (origIdx >= 0 && origIdx < files.size()) {
                         files[origIdx].enabled = newState;
-                        
+
+                        // Update sort item
+                        QTableWidgetItem* sortItem = tableWidget->item(visRow, 0);
+                        if (sortItem) sortItem->setText(newState ? "1" : "0");
+
                         // Update checkbox visually
                         QWidget* widget = tableWidget->cellWidget(visRow, 0);
                         if (widget) {
@@ -232,6 +236,12 @@ void FileListWidget::populateSingleRow(int i) {
             // Not in selection, just toggle this one
             if (originalIndex < files.size()) {
                 files[originalIndex].enabled = newState;
+
+                // Update sort item
+                if (visualRow >= 0) {
+                    QTableWidgetItem* sortItem = tableWidget->item(visualRow, 0);
+                    if (sortItem) sortItem->setText(newState ? "1" : "0");
+                }
             }
         }
         
@@ -244,7 +254,13 @@ void FileListWidget::populateSingleRow(int i) {
     checkboxLayout->setAlignment(Qt::AlignCenter);
     checkboxLayout->setContentsMargins(0, 0, 0, 0);
     tableWidget->setCellWidget(i, 0, checkboxWidget);
-    
+
+    // Hidden item drives sort for column 0; text transparent so it doesn't show behind the widget
+    auto checkItem = new QTableWidgetItem(file.enabled ? "1" : "0");
+    checkItem->setFlags(checkItem->flags() & ~Qt::ItemIsEditable);
+    checkItem->setForeground(QBrush(Qt::transparent));
+    tableWidget->setItem(i, 0, checkItem);
+
     // Filename
     auto filenameItem = new QTableWidgetItem(file.fileName);
     filenameItem->setData(Qt::UserRole, i);  // Store original index for sorting

@@ -81,9 +81,9 @@ private slots:
     
     // Batch processor signals
     void onBatchStarted(int totalFiles);
-    void onFileStarted(const QString& fileName, int fileNumber, int totalFiles);
-    void onFileProgress(const FFmpegRunner::ProgressInfo& info);
-    void onFileFinished(const QString& fileName, bool success);
+    void onFileStarted(const QString& fileName, int fileNumber, int totalFiles, int workerIndex);
+    void onFileProgress(const FFmpegRunner::ProgressInfo& info, int workerIndex);
+    void onFileFinished(const QString& fileName, bool success, int workerIndex);
     void onBatchFinished(int completed, int failed);
     // Complex batch job list
     void onShowBatchSettings();

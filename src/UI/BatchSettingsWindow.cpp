@@ -14,6 +14,7 @@
 #include <QCloseEvent>
 #include <QLocale>
 #include <QDebug>
+#include <QSettings>
 #include <QToolButton>
 
 BatchSettingsWindow::BatchSettingsWindow(QWidget* parent)
@@ -41,6 +42,9 @@ BatchSettingsWindow::BatchSettingsWindow(QWidget* parent)
     // ETA update timer (fires every second during processing)
     etaTimer = new QTimer(this);
     connect(etaTimer, &QTimer::timeout, this, &BatchSettingsWindow::updateETA);
+
+    // Restore saved geometry
+    restoreGeometry(QSettings().value("batchWindow/geometry").toByteArray());
 }
 
 BatchSettingsWindow::~BatchSettingsWindow() = default;
@@ -277,17 +281,37 @@ void BatchSettingsWindow::setupProgressView() {
     remainingLabel->setStyleSheet("font-weight: bold;");
     timeGrid->addWidget(remainingLabel, 0, 3);
     
-    timeGrid->addWidget(new QLabel("Speed:"), 1, 0);
-    speedLabel = new QLabel("—");
-    speedLabel->setStyleSheet("font-weight: bold;");
-    timeGrid->addWidget(speedLabel, 1, 1);
+    // timeGrid->addWidget(new QLabel("Speed:"), 1, 0);
+    // speedLabel = new QLabel("—");
+    // speedLabel->setStyleSheet("font-weight: bold;");
+    // timeGrid->addWidget(speedLabel, 1, 1);
     
     timeGrid->setColumnStretch(1, 1);
     timeGrid->setColumnStretch(3, 1);
     layout->addLayout(timeGrid);
     
     layout->addSpacing(4);
-    
+
+    // Per-worker instance section (hidden when N=1, populated at batch start)
+    m_instanceHeaderLabel = new QLabel("FFmpeg Instances:");
+    // m_instanceHeaderLabel->setStyleSheet("font-weight: bold;");
+    m_instanceHeaderLabel->setVisible(false);
+    layout->addWidget(m_instanceHeaderLabel);
+
+    m_instanceSection = new QWidget();
+    m_instanceLayout  = new QVBoxLayout(m_instanceSection);
+    m_instanceLayout->setContentsMargins(0, 2, 0, 2);
+    m_instanceLayout->setSpacing(3);
+    m_instanceSection->setVisible(false);
+    layout->addWidget(m_instanceSection);
+
+    m_instanceFooterLabel = new QLabel(
+        "<small><font color='#808080'>Adjust the number of FFmpeg Instances in Settings \u2192 Processing</font></small>");
+    m_instanceFooterLabel->setVisible(false);
+    layout->addWidget(m_instanceFooterLabel);
+
+    layout->addSpacing(4);
+
     // Results — hidden during processing, shown at completion (only if failures)
     auto* resultsRow = new QHBoxLayout();
     succeededLabel = new QLabel();
@@ -587,7 +611,7 @@ void BatchSettingsWindow::showProgressView() {
     progressDetailLabel->setText("0 / —");
     elapsedLabel->setText("0:00");
     remainingLabel->setText("—");
-    speedLabel->setText("—");
+    // speedLabel->setText("—");
     
     pauseButton->setVisible(true);
     resumeButton->setVisible(false);
@@ -636,62 +660,141 @@ void BatchSettingsWindow::onBatchStarted(int total) {
     totalFiles = total;
     completedFiles = 0;
     failedFiles = 0;
-    
+
     // Cap visual updates at ~200
     updateInterval = qMax(1, total / 200);
-    
+
     QLocale loc;
     progressDetailLabel->setText(QString("0 / %1").arg(loc.toString(total)));
     progressBar->setRange(0, total);
     progressBar->setValue(0);
-    
+
     // Hide results until completion
     succeededLabel->setVisible(false);
     failedLabel->setVisible(false);
-    
+
+    // Build per-worker rows
+    // Clear old rows from layout
+    while (QLayoutItem* item = m_instanceLayout->takeAt(0)) {
+        delete item->widget();
+        delete item;
+    }
+    m_workerRows.clear();
+
+    m_batchWorkerCount = QSettings().value("processing/maxConcurrent", 1).toInt();
+    m_batchWorkerCount = qMax(1, m_batchWorkerCount);
+
+    static const QString kBarStyle =
+        "QProgressBar {"
+        "    border: none;"
+        "    background-color: #404040;"
+        "    border-radius: 2px;"
+        "}"
+        "QProgressBar::chunk {"
+        "    background-color: rgba(255, 85, 0, 0.80);"
+        "    border-radius: 2px;"
+        "}";
+
+    for (int i = 0; i < m_batchWorkerCount; ++i) {
+        auto* row    = new QWidget();
+        auto* rowLay = new QHBoxLayout(row);
+        rowLay->setContentsMargins(0, 0, 0, 0);
+        rowLay->setSpacing(6);
+
+        auto* numLabel = new QLabel(QString("%1").arg(i + 1, 2, 10, QChar('0')));
+        numLabel->setFixedWidth(20);
+        numLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        QFont mono = numLabel->font();
+        mono.setFamily("Courier");
+        numLabel->setFont(mono);
+        rowLay->addWidget(numLabel);
+
+        auto* bar = new QProgressBar();
+        bar->setFixedHeight(4);
+        bar->setTextVisible(false);
+        bar->setRange(0, 10000);
+        bar->setValue(0);
+        bar->setStyleSheet(kBarStyle);
+        rowLay->addWidget(bar, 1);
+
+        m_instanceLayout->addWidget(row);
+        m_workerRows.append({row, bar});
+    }
+
+    bool showInstances = (m_batchWorkerCount > 1);
+    m_instanceHeaderLabel->setVisible(showInstances);
+    m_instanceSection->setVisible(showInstances);
+    m_instanceFooterLabel->setVisible(showInstances);
+
     elapsedTimer.start();
     etaTimer->start(1000);  // Update elapsed/ETA every second
-    
+
     showProgressView();
 }
 
-void BatchSettingsWindow::onFileStarted(const QString& fileName, int fileNumber, int total) {
+void BatchSettingsWindow::onFileStarted(const QString& fileName, int fileNumber, int total,
+                                        int workerIndex) {
     Q_UNUSED(fileName);
-    
-    // Only update label if within update interval (prevents 10,000 repaints)
-    if (fileNumber % updateInterval == 0 || fileNumber == 1 || fileNumber == total) {
-        QLocale loc;
-        progressDetailLabel->setText(
-            QString("%1 / %2").arg(loc.toString(fileNumber)).arg(loc.toString(total)));
-        progressBar->setValue(fileNumber - 1);
+
+    // Reset this worker's bar to indeterminate (pulsing) until a real percentage arrives
+    if (workerIndex >= 0 && workerIndex < m_workerRows.size()) {
+        auto* bar = m_workerRows[workerIndex].bar;
+        bar->setRange(0, 0);  // Indeterminate / busy indicator
     }
+
+    Q_UNUSED(fileNumber);
+    Q_UNUSED(total);
 }
 
-void BatchSettingsWindow::onFileProgress(const FFmpegRunner::ProgressInfo& info) {
-    if (info.speed > 0) {
-        speedLabel->setText(QString("%1× realtime").arg(info.speed, 0, 'f', 1));
+void BatchSettingsWindow::onFileProgress(const FFmpegRunner::ProgressInfo& info, int workerIndex) {
+    // Update per-worker bar
+    if (workerIndex >= 0 && workerIndex < m_workerRows.size()) {
+        auto* bar = m_workerRows[workerIndex].bar;
+        if (info.totalTime > 0.0 && info.currentTime > 0.0) {
+            if (bar->maximum() == 0) bar->setRange(0, 10000);  // Switch from indeterminate
+            bar->setValue(qMax(1, static_cast<int>((info.currentTime / info.totalTime) * 10000)));
+        }
+        // If no valid timing data yet, the bar stays in indeterminate (pulsing) mode
     }
+
+    // speedLabel hidden — per-worker speed isn't meaningful as an aggregate
 }
 
-void BatchSettingsWindow::onFileFinished(const QString& fileName, bool success) {
+void BatchSettingsWindow::onFileFinished(const QString& fileName, bool success, int workerIndex) {
     Q_UNUSED(fileName);
-    
+
+    // Clear this worker's bar (reset from indeterminate if needed)
+    if (workerIndex >= 0 && workerIndex < m_workerRows.size()) {
+        auto* bar = m_workerRows[workerIndex].bar;
+        bar->setRange(0, 10000);
+        bar->setValue(0);
+    }
+
     if (success) {
         completedFiles++;
     } else {
         failedFiles++;
     }
-    
+
     int done = completedFiles + failedFiles;
-    
+
     // Visual update throttling
     if (done % updateInterval == 0 || done == totalFiles) {
+        QLocale loc;
+        progressDetailLabel->setText(
+            QString("%1 / %2").arg(loc.toString(done)).arg(loc.toString(totalFiles)));
         progressBar->setValue(done);
     }
 }
 
 void BatchSettingsWindow::onBatchFinished(int completed, int failed) {
     etaTimer->stop();
+
+    // Clear all worker bars (reset from indeterminate if needed)
+    for (auto& row : m_workerRows) {
+        row.bar->setRange(0, 10000);
+        row.bar->setValue(0);
+    }
     
     completedFiles = completed;
     failedFiles = failed;
@@ -790,6 +893,8 @@ void BatchSettingsWindow::onCancelClicked() {
 // ========== CLOSE EVENT ==========
 
 void BatchSettingsWindow::closeEvent(QCloseEvent* event) {
+    QSettings().setValue("batchWindow/geometry", saveGeometry());
+
     // Hide instead of close — batch continues in background
     if (isShowingProgress() && batchProcessor &&
         batchProcessor->getState() == BatchProcessor::State::Processing) {

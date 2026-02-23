@@ -41,13 +41,18 @@ public:
     
     // Execute an FFmpeg command (command should NOT include 'ffmpeg' at start)
     void runCommand(const QString& command, const QString& ffmpegPath = "ffmpeg");
-    
+
     // Cancel current process
     void cancel();
-    
+
     // Check if currently running
     bool isRunning() const;
     void setTotalDuration(double seconds) { totalDuration = seconds; }
+
+    // When true (default), -progress pipe:2 key=value lines are parsed for the UI
+    // but NOT forwarded to outputReceived (keeps log files clean at low verbosity levels).
+    // Set false to include them in outputReceived (for verbose/debug log levels).
+    void setSuppressProgressLines(bool suppress) { m_suppressProgressLines = suppress; }
 
     // Get current status
     Status getStatus() const;
@@ -76,7 +81,9 @@ private:
     QProcess* process;
     Status status;
     QString lastError;
-    double totalDuration;  // Total duration of input file (if known)
+    double totalDuration;           // Total duration of input file (if known)
+    double m_lastSpeed;             // Last-seen speed (accumulated from separate speed= lines)
+    bool m_suppressProgressLines;   // If true, -progress pipe:2 lines are not forwarded to outputReceived
     QString currentCommand;
-    QString m_stderrBuffer;  // Line buffer for incomplete stderr chunks
+    QString m_stderrBuffer;         // Line buffer for incomplete stderr chunks
 };
