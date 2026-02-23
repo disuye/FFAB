@@ -266,7 +266,7 @@ SettingsDialog::SettingsDialog(QWidget* parent, UpdateChecker* checker)
 
     // --- Manual link ---
     auto* manualLink = new QLabel(
-        QString("<small>Or manually click this link to visit the Github page</small><br><a style='color: %1' href='https://github.com/disuye/FFAB-releases/releases/latest'>https://github.com/disuye/FFAB-releases/releases/latest</a>").arg(LINK_COLOR));
+        QString("<small>Or manually click this link to visit the Github page</small><br><a style='color: %1' href='https://github.com/disuye/FFAB/releases/latest'>https://github.com/disuye/FFAB/releases/latest</a>").arg(LINK_COLOR));
     manualLink->setOpenExternalLinks(true);
     manualLink->setStyleSheet("color: #808080;");
     manualLink->setWordWrap(true);
