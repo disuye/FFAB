@@ -41,7 +41,7 @@ Audio preview player may fail on some Linux versions.
 - Run ```/scripts/ninja-release.sh``` to build macOS Silicon & Universal
 - ```.github/workflows/build-ffab-linux.yml``` for Linux x86_64 & ARM64
 
-### Codebase v1.0.2
+### Codebase v1.0.3
 ```
 FFAB/
 ├── CMakeLists.txt
