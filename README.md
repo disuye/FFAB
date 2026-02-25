@@ -19,7 +19,10 @@ Check [Releases](https://github.com/disuye/FFAB/releases) for the latest DMG/ZIP
 ## Installation Issues
 
 #### macOS
-FFAB.app is not notarized by Apple and may be blocked by macOS Gatekeeper. 
+
+**FFAB.app v1.0.3 is now notarized by Apple → No more Gatekeeper issues!**
+
+Older versions are not notarized by Apple and may be blocked by macOS Gatekeeper. 
 - Monterey & Sonoma, right click FFAB.app, click Open, click Confirm
 - Sequoia & Tahoe run this Terminal command:<br> ```xattr -cr /Applications/FFAB.app```
 
