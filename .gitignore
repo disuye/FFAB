@@ -11,5 +11,6 @@ notes/
 ._*
 *.tar.gz
 *.zip
+.claude*/
 
 # EXCEPTIONS...
