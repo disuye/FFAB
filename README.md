@@ -1,3 +1,7 @@
+## Develpoment Update
+
+Development paused on FFAB until the community starts hitting me with bugs or feature requests. The current version of FFAB works great for my personal requirements, but I'm happy to put in more work if folks want / need more. Cheers!
+
 # FFAB Overview
 
 FFAB is a cross-platform, complex audio batch processor, effects rack, command builder & graphical user interface for [FFmpeg](https://ffmpeg.org/download.html).
