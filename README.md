@@ -1,4 +1,4 @@
-## Develpoment Update
+## Development Update
 
 Development paused on FFAB until the community starts hitting me with bugs or feature requests. The current version of FFAB works great for my personal requirements, but I'm happy to put in more work if folks want / need more. Cheers!
 
