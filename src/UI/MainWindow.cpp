@@ -510,6 +510,10 @@ void MainWindow::connectSignals() {
         onGeneratePreview();
     });
 
+    // Drag & drop on main file list
+    connect(inputPanel->getFileListWidget(), &FileListWidget::filesDropped,
+            this, &MainWindow::onFilesDropped);
+
     // Preview generation signals
     connect(waveformPreview, &WaveformPreviewWidget::generatePreviewRequested,
             this, &MainWindow::onGeneratePreview);
@@ -753,6 +757,44 @@ void MainWindow::connectAudioInputButtons(AudioInputFilter* audioInput) {
         fileListWidget->clearFiles();
         statusLabel->setText("AudioInput file list cleared");
         onChainModified();  // Update command preview
+    });
+    
+    // Drag & drop on AudioInput file list
+    disconnect(fileListWidget, &FileListWidget::filesDropped, nullptr, nullptr);
+    connect(fileListWidget, &FileListWidget::filesDropped, [this, audioInput, fileListWidget](const QStringList& paths) {
+        bool shouldScan = audioInput->shouldScanMetadata();
+        statusLabel->setText(shouldScan ?
+            QString("Scanning %1 dropped AudioInput files...").arg(paths.size()) :
+            QString("Adding %1 dropped AudioInput files...").arg(paths.size()));
+        scanProgressBar->setVisible(true);
+        scanProgressBar->setRange(0, paths.size());
+        scanProgressBar->setValue(0);
+        
+        QList<FileListWidget::AudioFileInfo> files;
+        for (int i = 0; i < paths.size(); ++i) {
+            FileListWidget::AudioFileInfo info;
+            if (shouldScan) {
+                info = AudioFileScanner::extractMetadata(paths[i], ffprobePath);
+            } else {
+                info.filePath = paths[i];
+                info.fileName = QFileInfo(paths[i]).fileName();
+                info.format = QFileInfo(paths[i]).suffix().toUpper();
+                info.duration = "00:00:00";
+                info.sampleRate = 0;
+                info.bitsPerSample = 0;
+                info.channels = 0;
+                info.bitrate = 0;
+                info.enabled = true;
+            }
+            files.append(info);
+            scanProgressBar->setValue(i + 1);
+            QCoreApplication::processEvents();
+        }
+        
+        scanProgressBar->setVisible(false);
+        fileListWidget->addFiles(files);
+        statusLabel->setText(QString("Added %1 dropped AudioInput files").arg(files.size()));
+        onChainModified();
     });
 }
 
@@ -1074,6 +1116,59 @@ void MainWindow::onClearFiles() {
         processButton->setToolTip("Add file(s) to the INPUT panel\nbefore clicking Process Files");
     statusLabel->setText("File list cleared");
     qDebug() << "File list cleared";
+}
+
+void MainWindow::onFilesDropped(const QStringList& paths) {
+    if (paths.isEmpty()) return;
+    
+    bool shouldScan = inputPanel->shouldScanMetadata();
+    
+    qDebug() << "Dropped" << paths.size() << "files | Scan metadata:" << shouldScan;
+    statusLabel->setText(shouldScan ?
+        QString("Scanning %1 dropped files...").arg(paths.size()) :
+        QString("Adding %1 dropped files...").arg(paths.size()));
+    
+    // Show scan progress bar
+    scanProgressBar->setVisible(true);
+    scanProgressBar->setRange(0, paths.size());
+    scanProgressBar->setValue(0);
+    
+    QList<FileListWidget::AudioFileInfo> files;
+    for (int i = 0; i < paths.size(); ++i) {
+        FileListWidget::AudioFileInfo info;
+        
+        if (shouldScan) {
+            info = AudioFileScanner::extractMetadata(paths[i], ffprobePath);
+        } else {
+            info.filePath = paths[i];
+            info.fileName = QFileInfo(paths[i]).fileName();
+            info.format = QFileInfo(paths[i]).suffix().toUpper();
+            info.duration = "00:00:00";
+            info.sampleRate = 0;
+            info.bitsPerSample = 0;
+            info.channels = 0;
+            info.bitrate = 0;
+            info.enabled = true;
+        }
+        
+        files.append(info);
+        scanProgressBar->setValue(i + 1);
+        QCoreApplication::processEvents();
+    }
+    
+    scanProgressBar->setVisible(false);
+    inputPanel->getFileListWidget()->addFiles(files);
+    
+    // Enable process button if we have output folder
+    if (!currentOutputFolder.isEmpty()) {
+        processButton->setEnabled(true);
+        processButton->setText("Process Files");
+    }
+    
+    statusLabel->setText(shouldScan ?
+        QString("Added %1 dropped files with metadata").arg(files.size()) :
+        QString("Added %1 dropped files").arg(files.size()));
+    qDebug() << "Dropped" << files.size() << "files" << (shouldScan ? "with metadata" : "without metadata");
 }
 
 // ========== SIDECHAIN INPUT SLOTS ==========

@@ -4,6 +4,13 @@
 #include <QApplication>
 #include <QPalette>
 #include <QKeyEvent>
+#include <QDragEnterEvent>
+#include <QDragLeaveEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QDirIterator>
+#include <QFileInfo>
+#include <QStyle>
 #include <algorithm>
 
 FileListWidget::FileListWidget(QWidget* parent) : QWidget(parent) {
@@ -50,7 +57,9 @@ void FileListWidget::setupUI() {
     // Row height - match SMPLR (20px)
     tableWidget->verticalHeader()->setDefaultSectionSize(20);
     
-    // Install event filter to catch Delete key
+    // Install event filter to catch Delete key + drag & drop
+    tableWidget->setAcceptDrops(true);
+    tableWidget->setDragDropMode(QAbstractItemView::DropOnly);
     tableWidget->installEventFilter(this);
 
     // Double-click on any non-checkbox column → generate preview + auto-play
@@ -81,6 +90,11 @@ void FileListWidget::updateBackground() {
         "   padding: 2px 0x;"
         "}"
     ).arg(brightRow, shadedRow);
+    
+    // Drop highlight border when dragging files over the table
+    tableStyle += "QTableWidget#fileListTable[dropHighlight=\"true\"] {"
+                  "   border: 2px solid #4a9eff;"
+                  "}";
     
     tableWidget->setStyleSheet(tableStyle);
 }
@@ -155,17 +169,70 @@ void FileListWidget::deleteSelectedFiles() {
 }
 
 bool FileListWidget::eventFilter(QObject* obj, QEvent* event) {
-    if (obj == tableWidget && event->type() == QEvent::KeyPress) {
-        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-        
-        // Delete or Backspace key
-        if (keyEvent->key() == Qt::Key_Delete || keyEvent->key() == Qt::Key_Backspace) {
-            deleteSelectedFiles();
-            return true;  // Event handled
+    if (obj == tableWidget) {
+        switch (event->type()) {
+        case QEvent::KeyPress: {
+            auto* keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Delete ||
+                keyEvent->key() == Qt::Key_Backspace) {
+                deleteSelectedFiles();
+                return true;
+            }
+            break;
+        }
+        case QEvent::DragEnter: {
+            auto* de = static_cast<QDragEnterEvent*>(event);
+            if (de->mimeData()->hasUrls()) {
+                de->acceptProposedAction();
+                tableWidget->setProperty("dropHighlight", true);
+                tableWidget->style()->polish(tableWidget);
+                return true;
+            }
+            break;
+        }
+        case QEvent::DragLeave:
+            tableWidget->setProperty("dropHighlight", false);
+            tableWidget->style()->polish(tableWidget);
+            return true;
+
+        case QEvent::Drop: {
+            tableWidget->setProperty("dropHighlight", false);
+            tableWidget->style()->polish(tableWidget);
+
+            auto* de = static_cast<QDropEvent*>(event);
+            QStringList paths;
+            const auto urls = de->mimeData()->urls();
+            const auto filters = audioNameFilters();
+
+            for (const QUrl& url : urls) {
+                QString path = url.toLocalFile();
+                if (path.isEmpty()) continue;
+#ifdef Q_OS_MACOS
+                // Finder sends NFD-encoded filenames; normalise to NFC
+                path = path.normalized(QString::NormalizationForm_C);
+#endif
+                QFileInfo fi(path);
+                if (fi.isDir()) {
+                    QDirIterator it(path, filters,
+                                    QDir::Files,
+                                    QDirIterator::Subdirectories);
+                    while (it.hasNext())
+                        paths.append(it.next());
+                } else if (fi.isFile()) {
+                    paths.append(path);
+                }
+            }
+
+            if (!paths.isEmpty()) {
+                de->acceptProposedAction();
+                emit filesDropped(paths);
+            }
+            return true;
+        }
+        default:
+            break;
         }
     }
-    
-    // Pass event to base class
     return QWidget::eventFilter(obj, event);
 }
 
@@ -353,4 +420,12 @@ QList<FileListWidget::AudioFileInfo> FileListWidget::getSelectedFiles() const {
 
 QList<FileListWidget::AudioFileInfo> FileListWidget::getAllFiles() const {
     return files;
+}
+
+QStringList FileListWidget::audioNameFilters() {
+    return {
+        "*.wav", "*.aif", "*.aiff", "*.flac", "*.mp3",
+        "*.ogg", "*.opus", "*.m4a", "*.aac", "*.wma",
+        "*.w64", "*.caf", "*.rf64"
+    };
 }

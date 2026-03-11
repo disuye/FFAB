@@ -59,6 +59,7 @@ private slots:
     void onAddFolder();
     void onAddFiles();
     void onClearFiles();
+    void onFilesDropped(const QStringList& paths);
     
     // Output signals
     void onOutputFolderChanged(const QString& path);

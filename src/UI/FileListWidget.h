@@ -65,6 +65,7 @@ signals:
     void fileSelectionChanged();  // Emitted when checkboxes change
     void rescanRequested();  // Emitted when user clicks Rescan Metadata button
     void previewRequested();  // Emitted on double-click: generate preview + auto-play
+    void filesDropped(const QStringList& paths);  // Emitted when files/folders are dropped onto the widget
     
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -73,6 +74,7 @@ private:
     void setupUI();
     void populateTable();
     void populateSingleRow(int index);
+    static QStringList audioNameFilters();
     
     QTableWidget* tableWidget;
     QList<AudioFileInfo> files;
