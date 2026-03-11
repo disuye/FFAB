@@ -93,29 +93,54 @@ void FileListWidget::updateBackground() {
     
     // Drop highlight border when dragging files over the table
     tableStyle += "QTableWidget#fileListTable[dropHighlight=\"true\"] {"
-                  "   border: 2px solid #4a9eff;"
+                  "   border: 1px solid #FF5500;"
+                  "   background-color: rgba(255, 85, 0, 0.1);"
                   "}";
     
     tableWidget->setStyleSheet(tableStyle);
 }
 
-void FileListWidget::addFile(const AudioFileInfo& fileInfo) {
+bool FileListWidget::addFile(const AudioFileInfo& fileInfo) {
+    QString key = fileInfo.fileName.toLower();
+    if (fileNameSet.contains(key)) {
+        return false;  // Duplicate filename — rejected
+    }
+    
+    fileNameSet.insert(key);
     files.append(fileInfo);
     
     // Add single row instead of rebuilding entire table (O(1) vs O(n))
     tableWidget->setRowCount(files.size());
     populateSingleRow(files.size() - 1);
+    return true;
 }
 
-void FileListWidget::addFiles(const QList<AudioFileInfo>& newFiles) {
-    if (newFiles.isEmpty()) return;
+int FileListWidget::addFiles(const QList<AudioFileInfo>& newFiles) {
+    if (newFiles.isEmpty()) return 0;
+    
+    // Filter out duplicate filenames (case-insensitive)
+    QList<AudioFileInfo> accepted;
+    accepted.reserve(newFiles.size());
+    int skipped = 0;
+    
+    for (const auto& file : newFiles) {
+        QString key = file.fileName.toLower();
+        if (fileNameSet.contains(key)) {
+            ++skipped;
+        } else {
+            fileNameSet.insert(key);
+            accepted.append(file);
+        }
+    }
+    
+    if (accepted.isEmpty()) return skipped;
     
     // Disable sorting and updates during batch add
-    tableWidget->setSortingEnabled(false);  // ADD THIS
+    tableWidget->setSortingEnabled(false);
     tableWidget->setUpdatesEnabled(false);
     
     int startIndex = files.size();
-    files.append(newFiles);
+    files.append(accepted);
     
     // Pre-allocate rows
     tableWidget->setRowCount(files.size());
@@ -126,11 +151,14 @@ void FileListWidget::addFiles(const QList<AudioFileInfo>& newFiles) {
     }
     
     tableWidget->setUpdatesEnabled(true);
-    tableWidget->setSortingEnabled(true);  // ADD THIS - re-enable after population
+    tableWidget->setSortingEnabled(true);
+    
+    return skipped;
 }
 
 void FileListWidget::clearFiles() {
     files.clear();
+    fileNameSet.clear();
     tableWidget->setRowCount(0);
 }
 
@@ -159,6 +187,12 @@ void FileListWidget::deleteSelectedFiles() {
     // Remove files from the list
     for (int index : indicesToDelete) {
         files.removeAt(index);
+    }
+    
+    // Rebuild the filename set after deletion
+    fileNameSet.clear();
+    for (const auto& file : files) {
+        fileNameSet.insert(file.fileName.toLower());
     }
     
     // Repopulate table to reflect changes (full rebuild needed after delete)

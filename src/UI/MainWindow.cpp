@@ -694,8 +694,11 @@ void MainWindow::connectAudioInputButtons(AudioInputFilter* audioInput) {
         );
         
         scanProgressBar->setVisible(false);
-        fileListWidget->addFiles(files);
-        statusLabel->setText(QString("Added %1 AudioInput files").arg(files.size()));
+        int skipped = fileListWidget->addFiles(files);
+        int added = files.size() - skipped;
+        statusLabel->setText(skipped > 0 ?
+            QString("Added %1 AudioInput files (%2 skipped — duplicate filenames)").arg(added).arg(skipped) :
+            QString("Added %1 AudioInput files").arg(added));
         onChainModified();  // Update command preview
     });
     
@@ -745,10 +748,13 @@ void MainWindow::connectAudioInputButtons(AudioInputFilter* audioInput) {
         }
         
         scanProgressBar->setVisible(false);
-        fileListWidget->addFiles(files);
-        statusLabel->setText(shouldScan ?
-            QString("Added %1 AudioInput files with metadata").arg(files.size()) :
-            QString("Added %1 AudioInput files").arg(files.size()));
+        int skipped = fileListWidget->addFiles(files);
+        int added = files.size() - skipped;
+        QString msg = shouldScan ?
+            QString("Added %1 AudioInput files with metadata").arg(added) :
+            QString("Added %1 AudioInput files").arg(added);
+        if (skipped > 0) msg += QString(" (%1 skipped — duplicate filenames)").arg(skipped);
+        statusLabel->setText(msg);
         onChainModified();  // Update command preview
     });
     
@@ -792,8 +798,11 @@ void MainWindow::connectAudioInputButtons(AudioInputFilter* audioInput) {
         }
         
         scanProgressBar->setVisible(false);
-        fileListWidget->addFiles(files);
-        statusLabel->setText(QString("Added %1 dropped AudioInput files").arg(files.size()));
+        int skipped = fileListWidget->addFiles(files);
+        int added = files.size() - skipped;
+        statusLabel->setText(skipped > 0 ?
+            QString("Added %1 dropped AudioInput files (%2 skipped — duplicate filenames)").arg(added).arg(skipped) :
+            QString("Added %1 dropped AudioInput files").arg(added));
         onChainModified();
     });
 }
@@ -1001,10 +1010,13 @@ void MainWindow::onAddFolder() {
         scanProgressBar->setVisible(false);
         
         // Add to file list widget
-        inputPanel->getFileListWidget()->addFiles(files);
+        int skipped = inputPanel->getFileListWidget()->addFiles(files);
+        int added = files.size() - skipped;
         
-        statusLabel->setText(QString("Found %1 audio files").arg(files.size()));
-        qDebug() << "Loaded" << files.size() << "audio files with metadata";
+        statusLabel->setText(skipped > 0 ?
+            QString("Found %1 audio files (%2 skipped — duplicate filenames)").arg(added).arg(skipped) :
+            QString("Found %1 audio files").arg(added));
+        qDebug() << "Loaded" << added << "audio files with metadata" << (skipped > 0 ? QString("(%1 duplicates skipped)").arg(skipped) : "");
         
     } else {
         // Fast add without metadata - just get file paths
@@ -1025,10 +1037,13 @@ void MainWindow::onAddFolder() {
         scanProgressBar->setVisible(false);
         
         // Add to file list widget
-        inputPanel->getFileListWidget()->addFiles(files);
+        int skipped = inputPanel->getFileListWidget()->addFiles(files);
+        int added = files.size() - skipped;
         
-        statusLabel->setText(QString("Added %1 audio files (no metadata)").arg(files.size()));
-        qDebug() << "Added" << files.size() << "audio files without metadata";
+        statusLabel->setText(skipped > 0 ?
+            QString("Added %1 audio files, no metadata (%2 skipped — duplicate filenames)").arg(added).arg(skipped) :
+            QString("Added %1 audio files (no metadata)").arg(added));
+        qDebug() << "Added" << added << "audio files without metadata" << (skipped > 0 ? QString("(%1 duplicates skipped)").arg(skipped) : "");
     }
     
     // Enable process button if we have files and output folder
@@ -1096,18 +1111,22 @@ void MainWindow::onAddFiles() {
     scanProgressBar->setVisible(false);
     
     // Add to file list widget
-    inputPanel->getFileListWidget()->addFiles(files);
+    int skipped = inputPanel->getFileListWidget()->addFiles(files);
+    int added = files.size() - skipped;
     
     // Enable process button if we have output folder
-    if (!currentOutputFolder.isEmpty()) {
+    if (added > 0 && !currentOutputFolder.isEmpty()) {
         processButton->setEnabled(true);
         processButton->setText("Process Files");
     }
     
-    statusLabel->setText(shouldScan ?
-        QString("Added %1 files with metadata").arg(files.size()) :
-        QString("Added %1 files (no metadata)").arg(files.size()));
-    qDebug() << "Added" << files.size() << "files" << (shouldScan ? "with metadata" : "without metadata");
+    QString msg = shouldScan ?
+        QString("Added %1 files with metadata").arg(added) :
+        QString("Added %1 files (no metadata)").arg(added);
+    if (skipped > 0) msg += QString(" (%1 skipped — duplicate filenames)").arg(skipped);
+    statusLabel->setText(msg);
+    qDebug() << "Added" << added << "files" << (shouldScan ? "with metadata" : "without metadata")
+             << (skipped > 0 ? QString("(%1 duplicates skipped)").arg(skipped) : "");
 }
 
 void MainWindow::onClearFiles() {
@@ -1157,18 +1176,22 @@ void MainWindow::onFilesDropped(const QStringList& paths) {
     }
     
     scanProgressBar->setVisible(false);
-    inputPanel->getFileListWidget()->addFiles(files);
+    int skipped = inputPanel->getFileListWidget()->addFiles(files);
+    int added = files.size() - skipped;
     
     // Enable process button if we have output folder
-    if (!currentOutputFolder.isEmpty()) {
+    if (added > 0 && !currentOutputFolder.isEmpty()) {
         processButton->setEnabled(true);
         processButton->setText("Process Files");
     }
     
-    statusLabel->setText(shouldScan ?
-        QString("Added %1 dropped files with metadata").arg(files.size()) :
-        QString("Added %1 dropped files").arg(files.size()));
-    qDebug() << "Dropped" << files.size() << "files" << (shouldScan ? "with metadata" : "without metadata");
+    QString msg = shouldScan ?
+        QString("Added %1 dropped files with metadata").arg(added) :
+        QString("Added %1 dropped files").arg(added);
+    if (skipped > 0) msg += QString(" (%1 skipped — duplicate filenames)").arg(skipped);
+    statusLabel->setText(msg);
+    qDebug() << "Dropped" << added << "files" << (shouldScan ? "with metadata" : "without metadata")
+             << (skipped > 0 ? QString("(%1 duplicates skipped)").arg(skipped) : "");
 }
 
 // ========== SIDECHAIN INPUT SLOTS ==========

@@ -24,7 +24,7 @@ Check [Releases](https://github.com/disuye/FFAB/releases) for the latest DMG/ZIP
 
 #### macOS
 
-**FFAB.app v1.0.3 is now notarized by Apple → No more Gatekeeper issues!**
+**FFAB.app v1.0.3+ is now notarized by Apple → No more Gatekeeper issues!**
 
 Older versions are not notarized by Apple and may be blocked by macOS Gatekeeper. 
 - Monterey & Sonoma, right click FFAB.app, click Open, click Confirm
@@ -45,7 +45,7 @@ Audio preview player may fail on some Linux versions.
 - Run ```/scripts/ninja-release.sh``` to build macOS Silicon & Universal
 - ```.github/workflows/build-ffab-linux.yml``` for Linux x86_64 & ARM64
 
-### Codebase v1.0.3
+### Codebase v1.0.4
 ```
 FFAB/
 ├── CMakeLists.txt

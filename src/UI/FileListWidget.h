@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QList>
+#include <QSet>
 #include <QString>
 
 /**
@@ -36,9 +37,10 @@ public:
     explicit FileListWidget(QWidget* parent = nullptr);
     ~FileListWidget() override;
     
-    // Add files to the list
-    void addFile(const AudioFileInfo& fileInfo);
-    void addFiles(const QList<AudioFileInfo>& files);
+    // Add files to the list (returns number of duplicates skipped)
+    // Duplicate = case-insensitive filename match against existing files
+    bool addFile(const AudioFileInfo& fileInfo);    // returns false if duplicate
+    int addFiles(const QList<AudioFileInfo>& files); // returns count of skipped duplicates
     
     // Clear all files
     void clearFiles();
@@ -78,4 +80,5 @@ private:
     
     QTableWidget* tableWidget;
     QList<AudioFileInfo> files;
+    QSet<QString> fileNameSet;  // Case-insensitive lookup for duplicate prevention
 };
