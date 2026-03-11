@@ -66,7 +66,7 @@ QList<FFmpegInstallDialog::PlatformLink> FFmpegInstallDialog::allPlatformLinks()
     });
 
     links.append({
-        "Linux — Static build (x84_64, github.com/BtbN)",
+        "Linux — Static build (x86_64, github.com/BtbN)",
         "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz",
         "tar.xz",
         isLinux && !isArm
