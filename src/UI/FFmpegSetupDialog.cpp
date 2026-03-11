@@ -59,29 +59,29 @@ QList<FFmpegInstallDialog::PlatformLink> FFmpegInstallDialog::allPlatformLinks()
 #endif
 
     links.append({
-        "macOS — Static build (Universal)",
+        "macOS — Static build (evermeet.cx)",
         "https://evermeet.cx/ffmpeg/getrelease/zip",
         "zip",
         isMac
     });
 
     links.append({
-        "Linux — Static build (amd64)",
-        "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz",
+        "Linux — Static build (x84_64, github.com/BtbN)",
+        "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz",
         "tar.xz",
         isLinux && !isArm
     });
 
     links.append({
-        "Linux — Static build (arm64)",
-        "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz",
+        "Linux — Static build (ARM64, github.com/BtbN)",
+        "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz",
         "tar.xz",
         isLinux && isArm
     });
 
     links.append({
-        "Windows — Static build (gyan.dev)",
-        "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
+        "Windows — Static build (github.com/BtbN)",
+        "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
         "zip",
         isWindows
     });
@@ -200,6 +200,7 @@ void FFmpegInstallDialog::buildUI()
     auto *sourceLabel = new QLabel(
         "<small>Sources: "
         "<a style='color: #808080;' href='https://evermeet.cx/ffmpeg/'>evermeet.cx</a> | "
+        "<a style='color: #808080;' href='https://github.com/BtbN/FFmpeg-Builds/releases/tag/latest'>github.com/BtbN</a> | "
         "<a style='color: #808080;' href='https://johnvansickle.com/ffmpeg/'>johnvansickle.com</a> | "
         "<a style='color: #808080;' href='https://www.gyan.dev/ffmpeg/builds/'>gyan.dev</a>"
         "</small>");
