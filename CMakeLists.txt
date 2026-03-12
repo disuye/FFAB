@@ -364,6 +364,8 @@ add_executable(FFAB
     src/UI/RegionPreviewWindow.cpp
     src/UI/FFmpegSetupDialog.h
     src/UI/FFmpegSetupDialog.cpp
+    src/UI/FilterPresetBar.h
+    src/UI/FilterPresetBar.cpp
     
     # Utils
     src/Utils/KeyCommands.h

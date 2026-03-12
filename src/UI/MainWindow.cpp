@@ -9,6 +9,7 @@
 #include "CommandViewWindow.h"
 #include "RegionPreviewWindow.h"
 #include "PresetManager.h"
+#include "FilterPresetBar.h"
 #include "Utils/KeyCommands.h"
 #include "Core/FilterChain.h"
 #include "Core/AppConfig.h"
@@ -237,12 +238,47 @@ void MainWindow::setupUI() {
 
     rightLayout->addWidget(titleContainer, 0);
     
+    // Filter Preset Bar (hidden by default, toggled via View > Filter Presets)
+    filterPresetBar = new FilterPresetBar();
+    filterPresetBar->setVisible(false);
+    rightLayout->addWidget(filterPresetBar, 0);
+
+    // Preset bar signals (dumb stubs — log only until save/load is wired)
+    connect(filterPresetBar, &FilterPresetBar::previousRequested, this, [this]() {
+        qDebug() << "[PresetBar] Previous requested for filter type:" << filterPresetBar->filterType();
+    });
+    connect(filterPresetBar, &FilterPresetBar::nextRequested, this, [this]() {
+        qDebug() << "[PresetBar] Next requested for filter type:" << filterPresetBar->filterType();
+    });
+    connect(filterPresetBar, &FilterPresetBar::loadPresetRequested, this, [this]() {
+        qDebug() << "[PresetBar] Load preset requested";
+    });
+    connect(filterPresetBar, &FilterPresetBar::savePresetRequested, this, [this]() {
+        qDebug() << "[PresetBar] Save preset requested";
+    });
+    connect(filterPresetBar, &FilterPresetBar::savePresetAsRequested, this, [this]() {
+        qDebug() << "[PresetBar] Save preset as requested";
+    });
+    connect(filterPresetBar, &FilterPresetBar::presetSelected, this, [this](const QString& name) {
+        qDebug() << "[PresetBar] Preset selected:" << name;
+        filterPresetBar->setPresetName(name);
+    });
+
     // Stacked widget with 3 panels
     stackedWidget = new QStackedWidget();
     
     inputPanel = new InputPanel();
     filterParamsPanel = new FilterParamsPanel();
     outputSettingsPanel = new OutputSettingsPanel();
+
+    // Right-click on filter params panel shows preset context menu
+    filterParamsPanel->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(filterParamsPanel, &QWidget::customContextMenuRequested,
+            this, [this](const QPoint& pos) {
+        if (filterPresetBar && filterIdBadge->isVisible()) {
+            filterPresetBar->showContextMenu(filterParamsPanel->mapToGlobal(pos));
+        }
+    });
     
     stackedWidget->addWidget(inputPanel);          // Index 0 - INPUT
     stackedWidget->addWidget(filterParamsPanel);   // Index 1 - FILTER
@@ -365,6 +401,19 @@ void MainWindow::createMenuBar() {
             batchSettingsWindow->show();
             batchSettingsWindow->raise();
             batchSettingsWindow->activateWindow();
+        }
+    });
+
+    viewMenu->addSeparator();
+
+    m_filterPresetsAction = viewMenu->addAction("Filter Preset UI...");
+    m_filterPresetsAction->setCheckable(true);
+    m_filterPresetsAction->setChecked(false);
+    connect(m_filterPresetsAction, &QAction::toggled, this, [this](bool checked) {
+        // Only show when a filter (not input/output) is selected
+        if (filterPresetBar) {
+            filterPresetBar->setVisible(checked && stackedWidget->currentIndex() == 1
+                                        && filterIdBadge->isVisible());
         }
     });
 
@@ -819,12 +868,14 @@ void MainWindow::onFilterSelected(int position) {
         filterIdBadge->setVisible(false);
         stackedWidget->setCurrentIndex(0);
         docLinks->setText("");
+        if (filterPresetBar) filterPresetBar->setVisible(false);
     } else if (filter->filterType() == "output") {
         titleLabel->setText("Output Parameters");
         filterIdBadge->setVisible(false);
         stackedWidget->setCurrentIndex(1);  // Use filterParamsPanel, not outputSettingsPanel
         docLinks->setText("");
         filterParamsPanel->setFilterWidget(filter->getParametersWidget());
+        if (filterPresetBar) filterPresetBar->setVisible(false);
         // Connect output folder changed signal
         if (auto* outputFilter = dynamic_cast<OutputFilter*>(filter.get())) {
             connect(outputFilter, &OutputFilter::outputFolderChanged,
@@ -857,6 +908,22 @@ void MainWindow::onFilterSelected(int position) {
         stackedWidget->setCurrentIndex(1);
         filterParamsPanel->setFilterWidget(filter->getParametersWidget());
         
+        // Update preset bar
+        if (filterPresetBar) {
+            filterPresetBar->setFilterType(filter->filterType());
+            filterPresetBar->clearPreset();
+            // Dummy presets for UI testing — replace with folder scan later
+            filterPresetBar->setPresetList({
+                "Warm Tape Saturation",
+                "Kick Drum 005",
+                "Gentle High Shelf",
+                "Radio EQ",
+                "Telephone Effect"
+            });
+            filterPresetBar->setVisible(
+                m_filterPresetsAction && m_filterPresetsAction->isChecked());
+        }
+
         if (auto* audioInput = dynamic_cast<AudioInputFilter*>(filter.get())) {
             connectAudioInputButtons(audioInput);
         }
@@ -900,6 +967,22 @@ void MainWindow::onSubChainFilterSelected(int filterId) {
     stackedWidget->setCurrentIndex(1);
     filterParamsPanel->setFilterWidget(filter->getParametersWidget());
     
+    // Update preset bar
+    if (filterPresetBar) {
+        filterPresetBar->setFilterType(filter->filterType());
+        filterPresetBar->clearPreset();
+        // Dummy presets for UI testing — replace with folder scan later
+        filterPresetBar->setPresetList({
+            "Warm Tape Saturation",
+            "Kick Drum 005",
+            "Gentle High Shelf",
+            "Radio EQ",
+            "Telephone Effect"
+        });
+        filterPresetBar->setVisible(
+            m_filterPresetsAction && m_filterPresetsAction->isChecked());
+    }
+
     if (auto* audioInput = dynamic_cast<AudioInputFilter*>(filter.get())) {
         connectAudioInputButtons(audioInput);
     }

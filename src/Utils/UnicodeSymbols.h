@@ -25,9 +25,10 @@ inline const QString Stop         = QString(QChar(0x25A0)); // ■ black square
 // Geometric shapes (algorithm diagrams)
 inline const QString TriangleUp   = QString(QChar(0x25B2)); // ▲ up-pointing triangle
 inline const QString TriangleDown = QString(QChar(0x25BC)); // ▼ down-pointing triangle
+inline const QString TriangleRight = QString(QChar(0x25B6)); // ▶ right-pointing triangle
+inline const QString TriangleLeft = QString(QChar(0x25C0)); // ◀ left-pointing triangle
 inline const QString Circle       = QString(QChar(0x25CF)); // ● black circle
 inline const QString LargeCircle  = QString(QChar(0x2B24)); // ⬤ black large circle
-inline const QString TriangleLeft = QString(QChar(0x25C0)); // ◀ left-pointing triangle
 
 // Arrows
 inline const QString ArrowUp     = QString(QChar(0x2191)); // ↑
@@ -132,6 +133,20 @@ inline QIcon triangleDownIcon() {
     }));
 }
 
+// ◀ TriangleLeft — left-pointing triangle
+inline QIcon triangleLeftIcon() {
+    return QIcon(new AdaptiveIconEngine([](const QByteArray& fg, const QByteArray&) {
+        return makeSvg("<polygon points='12,2 12,15 4,8' fill='" + fg + "'/>");
+    }));
+}
+
+// ▶ TriangleRight — right-pointing triangle
+inline QIcon triangleRightIcon() {
+    return QIcon(new AdaptiveIconEngine([](const QByteArray& fg, const QByteArray&) {
+        return makeSvg("<polygon points='4,2 4,15 12,8' fill='" + fg + "'/>");
+    }));
+}
+
 // ● Circle — filled circle
 inline QIcon circleIcon() {
     return QIcon(new AdaptiveIconEngine([](const QByteArray& fg, const QByteArray&) {
@@ -143,13 +158,6 @@ inline QIcon circleIcon() {
 inline QIcon largeCircleIcon() {
     return QIcon(new AdaptiveIconEngine([](const QByteArray& fg, const QByteArray&) {
         return makeSvg("<circle cx='8' cy='8' r='7' fill='" + fg + "'/>");
-    }));
-}
-
-// ◀ TriangleLeft — left-pointing triangle
-inline QIcon triangleLeftIcon() {
-    return QIcon(new AdaptiveIconEngine([](const QByteArray& fg, const QByteArray&) {
-        return makeSvg("<polygon points='11,3 11,13 4,8' fill='" + fg + "'/>");
     }));
 }
 

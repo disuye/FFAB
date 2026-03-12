@@ -16,6 +16,7 @@
 #include "Utils/KeyCommands.h"
 #include "Core/JobListBuilder.h"
 #include "FFmpegSetupDialog.h"
+#include "FilterPresetBar.h"
 
 
 // Forward declarations
@@ -113,9 +114,13 @@ private:
     BatchProcessor* batchProcessor;
     class PreviewGenerator* previewGenerator;
     PresetManager* presetManager;
-    
+
     // Preset state
     QString currentPresetPath;
+    
+    // Filter Preset UI
+    FilterPresetBar* filterPresetBar = nullptr;
+    QAction* m_filterPresetsAction = nullptr;
     
     // UI Components
     FilterChainWidget* filterChainWidget;
