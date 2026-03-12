@@ -52,6 +52,7 @@ signals:
     void loadPresetRequested();
     void savePresetRequested();
     void savePresetAsRequested();
+    void toggleBarRequested();
     void presetSelected(const QString& presetName);
 
 private:

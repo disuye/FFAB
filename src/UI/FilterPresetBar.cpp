@@ -144,7 +144,7 @@ void FilterPresetBar::showContextMenu(const QPoint& globalPos) {
 
         // Toggle FilterPresetBar UI
         m_contextMenu->addAction("Filter Preset UI...", this, [this]() {
-            // Emit a signal or directly toggle visibility
+            emit toggleBarRequested();
         });
 
     }

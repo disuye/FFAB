@@ -263,6 +263,11 @@ void MainWindow::setupUI() {
         qDebug() << "[PresetBar] Preset selected:" << name;
         filterPresetBar->setPresetName(name);
     });
+    connect(filterPresetBar, &FilterPresetBar::toggleBarRequested, this, [this]() {
+        if (m_filterPresetsAction) {
+            m_filterPresetsAction->toggle();  // flips the View menu checkmark too
+        }
+    });
 
     // Stacked widget with 3 panels
     stackedWidget = new QStackedWidget();
