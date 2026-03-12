@@ -25,16 +25,14 @@ void FilterPresetBar::setupUI() {
     // Load
     m_loadPresetButton = new QPushButton(this);
     m_loadPresetButton->setText("Load");
-    //m_loadPresetButton->setMaximumWidth(24);
-    m_loadPresetButton->setToolTip("Next preset");
-    //connect(m_loadPresetButton, &QPushButton::clicked, this, &FilterPresetBar::XXXX);
+    m_loadPresetButton->setToolTip("Load filter preset");
+    connect(m_loadPresetButton, &QPushButton::clicked, this, &FilterPresetBar::loadPresetRequested);
 
     // Save
     m_savePresetButton = new QPushButton(this);
     m_savePresetButton->setText("Save");
-    //m_savePresetButton->setMaximumWidth(24);
-    m_savePresetButton->setToolTip("Next preset");
-    //connect(m_savePresetButton, &QPushButton::clicked, this, &FilterPresetBar::XXXX);
+    m_savePresetButton->setToolTip("Save filter preset");
+    connect(m_savePresetButton, &QPushButton::clicked, this, &FilterPresetBar::savePresetRequested);
 
     // Preset name label (centered, stretches)
     m_nameLabel = new QLabel(this);
@@ -45,7 +43,6 @@ void FilterPresetBar::setupUI() {
     // ◀ Previous
     m_prevButton = new QPushButton(this);
     m_prevButton->setIcon(Sym::triangleLeftIcon());
-    // m_prevButton->setText("◀");
     m_prevButton->setIconSize(QSize(10, 10));
     m_prevButton->setMaximumWidth(24);
     m_prevButton->setToolTip("Previous preset");
@@ -54,7 +51,6 @@ void FilterPresetBar::setupUI() {
     // ▶ Next
     m_nextButton = new QPushButton(this);
     m_nextButton->setIcon(Sym::triangleRightIcon());
-    // m_nextButton->setText("▶");
     m_nextButton->setIconSize(QSize(10, 10));
     m_nextButton->setMaximumWidth(24);
     m_nextButton->setToolTip("Next preset");
