@@ -130,6 +130,16 @@ void Preferences::clearRecentPresets() {
     m_settings.setValue("RecentPresets/list", QStringList());
 }
 
+// ========== View State ==========
+
+bool Preferences::filterPresetBarVisible() const {
+    return m_settings.value("view/filterPresetBar", false).toBool();
+}
+
+void Preferences::setFilterPresetBarVisible(bool visible) {
+    m_settings.setValue("view/filterPresetBar", visible);
+}
+
 void Preferences::sync() {
     m_settings.sync();
 }

@@ -65,6 +65,11 @@ public:
     QStringList recentPresets() const;
     void clearRecentPresets();
     
+    // ========== View State ==========
+
+    bool filterPresetBarVisible() const;
+    void setFilterPresetBarVisible(bool visible);
+
     // Force sync to disk
     void sync();
     

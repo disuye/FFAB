@@ -469,13 +469,13 @@ void MainWindow::createMenuBar() {
 
     m_filterPresetsAction = viewMenu->addAction("Filter Preset UI...");
     m_filterPresetsAction->setCheckable(true);
-    m_filterPresetsAction->setChecked(false);
+    m_filterPresetsAction->setChecked(Preferences::instance().filterPresetBarVisible());
     connect(m_filterPresetsAction, &QAction::toggled, this, [this](bool checked) {
-        // Only show when a filter (not input/output) is selected
         if (filterPresetBar) {
             filterPresetBar->setVisible(checked && stackedWidget->currentIndex() == 1
                                         && filterIdBadge->isVisible());
         }
+        Preferences::instance().setFilterPresetBarVisible(checked);
     });
 
     helpMenu->addAction("Qt Framework", qApp, &QApplication::aboutQt);
