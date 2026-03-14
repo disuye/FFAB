@@ -2350,6 +2350,8 @@ void MainWindow::onNew() {
     titleLabel->setText("Input Parameters");
     filterIdBadge->setVisible(false);
     stackedWidget->setCurrentIndex(0);
+    m_currentFilter.reset();
+    if (filterPresetBar) filterPresetBar->setVisible(false);
     
     // Reset status
     statusLabel->setText("Ready");
@@ -2359,6 +2361,7 @@ void MainWindow::onNew() {
     processButton->setToolTip("Add file(s) to the INPUT panel\nbefore clicking Process Files");
     processButton->setText("Process Files");
 }
+
 void MainWindow::onShowBatchSettings() {
     if (!batchSettingsWindow) return;
     
