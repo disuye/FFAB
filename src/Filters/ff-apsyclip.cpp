@@ -342,3 +342,7 @@ void FFApsyclip::fromJSON(const QJsonObject& json) {
     m_level = json["level"].toBool(false);
     updateFFmpegFlags();
 }
+void FFApsyclip::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

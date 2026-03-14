@@ -554,3 +554,8 @@ void FFSidechaingate::fromJSON(const QJsonObject& json) {
         if (idx >= 0) detectionCombo->setCurrentIndex(idx);
     }
 }
+
+void FFSidechaingate::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

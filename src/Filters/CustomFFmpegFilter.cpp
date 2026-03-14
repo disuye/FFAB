@@ -122,3 +122,8 @@ void CustomFFmpegFilter::fromJSON(const QJsonObject& json) {
     customCommand = json["command"].toString(getTemplateForPosition());
     manualOutputLabels = json["manualOutputLabels"].toBool(false);
 }
+
+void CustomFFmpegFilter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

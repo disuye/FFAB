@@ -130,3 +130,8 @@ void FFDrmeter::fromJSON(const QJsonObject& json) {
     m_length = json["length"].toDouble(3.0);
     updateFFmpegFlags();
 }
+
+void FFDrmeter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

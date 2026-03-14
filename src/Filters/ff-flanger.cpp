@@ -372,3 +372,8 @@ void FFFlanger::fromJSON(const QJsonObject& json) {
     m_interp = json["interp"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFFlanger::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

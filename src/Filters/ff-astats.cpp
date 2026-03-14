@@ -166,3 +166,8 @@ void FFAstats::fromJSON(const QJsonObject& json) {
     m_reset = json["reset"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFAstats::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -378,3 +378,8 @@ void FFBass::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFBass::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

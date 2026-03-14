@@ -435,3 +435,8 @@ void FFAsubboost::fromJSON(const QJsonObject& json) {
     m_delay = json["delay"].toDouble(20.0);
     updateFFmpegFlags();
 }
+
+void FFAsubboost::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

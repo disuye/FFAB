@@ -512,3 +512,8 @@ void FFHaas::fromJSON(const QJsonObject& json) {
     m_rightPhase = json["right_phase"].toBool(true);
     updateFFmpegFlags();
 }
+
+void FFHaas::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

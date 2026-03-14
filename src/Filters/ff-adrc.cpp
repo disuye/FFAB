@@ -182,3 +182,8 @@ void FFAdrc::fromJSON(const QJsonObject& json) {
     m_release = json["release"].toDouble(100.0);
     updateFFmpegFlags();
 }
+
+void FFAdrc::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

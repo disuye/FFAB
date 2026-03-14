@@ -363,3 +363,8 @@ void FFShowwavespic::fromJSON(const QJsonObject& json) {
         browseOutputFolderButton->setEnabled(m_useCustomOutputFolder);
     }
 }
+
+void FFShowwavespic::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

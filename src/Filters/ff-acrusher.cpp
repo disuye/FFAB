@@ -531,3 +531,8 @@ void FFAcrusher::fromJSON(const QJsonObject& json) {
     m_lforate = json["lforate"].toDouble(0.3);
     updateFFmpegFlags();
 }
+
+void FFAcrusher::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

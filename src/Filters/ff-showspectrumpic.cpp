@@ -562,3 +562,8 @@ void FFShowspectrumpic::fromJSON(const QJsonObject& json) {
         browseOutputFolderButton->setEnabled(m_useCustomOutputFolder);
     }
 }
+
+void FFShowspectrumpic::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

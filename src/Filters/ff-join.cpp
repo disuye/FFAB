@@ -187,3 +187,8 @@ void FFJoin::fromJSON(const QJsonObject& json) {
     m_map = json["map"].toString("");
     updateFFmpegFlags();
 }
+
+void FFJoin::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

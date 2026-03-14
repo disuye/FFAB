@@ -404,3 +404,8 @@ void FFRubberband::fromJSON(const QJsonObject& json) {
     m_channels = json["channels"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFRubberband::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

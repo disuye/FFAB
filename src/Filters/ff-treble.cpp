@@ -378,3 +378,8 @@ void FFTreble::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFTreble::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

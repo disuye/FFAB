@@ -698,3 +698,8 @@ void FFStereotools::fromJSON(const QJsonObject& json) {
     m_phaser = json["phaser"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFStereotools::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

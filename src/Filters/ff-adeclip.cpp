@@ -342,3 +342,8 @@ void FFAdeclip::fromJSON(const QJsonObject& json) {
     m_method = json["method"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFAdeclip::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -132,3 +132,8 @@ void FFAdenorm::fromJSON(const QJsonObject& json) {
     m_type = json["noise_type"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFAdenorm::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

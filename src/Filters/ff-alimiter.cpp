@@ -411,3 +411,8 @@ void FFAlimiter::fromJSON(const QJsonObject& json) {
     m_latency = json["latency"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFAlimiter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

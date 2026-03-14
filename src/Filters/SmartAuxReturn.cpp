@@ -174,3 +174,8 @@ void SmartAuxReturn::fromJSON(const QJsonObject& json) {
     if (dropoutSpinBox) dropoutSpinBox->setValue(dropoutTransition);
     if (normalizeCheckBox) normalizeCheckBox->setChecked(normalize);
 }
+
+void SmartAuxReturn::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

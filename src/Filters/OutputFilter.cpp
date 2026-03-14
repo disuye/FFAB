@@ -666,3 +666,8 @@ void OutputFilter::fromJSON(const QJsonObject& json) {
         videoPassthroughCheck->blockSignals(false);
     }
 }
+
+void OutputFilter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

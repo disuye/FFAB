@@ -69,3 +69,8 @@ void FFEarwax::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     // No parameters to restore
 }
+
+void FFEarwax::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -184,3 +184,8 @@ void FFAecho::fromJSON(const QJsonObject& json) {
     m_decays = json["decays"].toString("0.5|0.3");
     updateFFmpegFlags();
 }
+
+void FFAecho::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

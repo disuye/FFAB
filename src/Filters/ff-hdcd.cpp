@@ -271,3 +271,8 @@ void FFHdcd::fromJSON(const QJsonObject& json) {
     m_bitsPerSample = json["bits_per_sample"].toInt(16);
     updateFFmpegFlags();
 }
+
+void FFHdcd::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

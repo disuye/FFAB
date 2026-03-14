@@ -327,3 +327,8 @@ void FFBandpass::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFBandpass::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

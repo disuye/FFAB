@@ -55,3 +55,8 @@ void FFAcopy::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     updateFFmpegFlags();
 }
+
+void FFAcopy::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

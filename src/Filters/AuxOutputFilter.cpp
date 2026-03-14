@@ -580,3 +580,8 @@ void AuxOutputFilter::fromJSON(const QJsonObject& json) {
         customFlagsEdit->setText(m_customFlags);
     }
 }
+
+void AuxOutputFilter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

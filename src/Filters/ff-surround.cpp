@@ -362,3 +362,8 @@ void FFSurround::fromJSON(const QJsonObject& json) {
     m_focus = json["focus"].toDouble(0.0);
     updateFFmpegFlags();
 }
+
+void FFSurround::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

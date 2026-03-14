@@ -231,3 +231,8 @@ void FFPan::fromJSON(const QJsonObject& json) {
     m_channelMap = json["channel_map"].toString("c0=c0|c1=c1");
     updateFFmpegFlags();
 }
+
+void FFPan::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

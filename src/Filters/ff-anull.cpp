@@ -38,3 +38,8 @@ void FFAnull::toJSON(QJsonObject& json) const {
 void FFAnull::fromJSON(const QJsonObject& json) {
     updateFFmpegFlags();
 }
+
+void FFAnull::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

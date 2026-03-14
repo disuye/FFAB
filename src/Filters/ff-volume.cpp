@@ -119,3 +119,7 @@ void FFVolume::fromJSON(const QJsonObject& json) {
     decibels = json["decibels"].toDouble(-0.3);
     updateFFmpegFlags();
 }
+void FFVolume::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

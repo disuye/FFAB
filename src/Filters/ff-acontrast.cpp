@@ -112,3 +112,8 @@ void FFAcontrast::fromJSON(const QJsonObject& json) {
     m_contrast = json["contrast"].toDouble(33.0);
     updateFFmpegFlags();
 }
+
+void FFAcontrast::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

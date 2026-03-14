@@ -28,6 +28,7 @@ public:
     
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     enum class Category { Uncompressed = 0, Lossless, Compressed, Advanced };
     enum class UncompressedFormat { WAV = 0, AIFF, CAF };

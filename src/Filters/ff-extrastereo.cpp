@@ -120,3 +120,8 @@ void FFExtrastereo::fromJSON(const QJsonObject& json) {
     m_clipping = json["clipping"].toBool(true);
     updateFFmpegFlags();
 }
+
+void FFExtrastereo::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -176,3 +176,8 @@ void FFAcue::fromJSON(const QJsonObject& json) {
     m_buffer = json["buffer"].toDouble(0.0);
     updateFFmpegFlags();
 }
+
+void FFAcue::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -235,3 +235,8 @@ void FFAsuperpass::fromJSON(const QJsonObject& json) {
     m_level = json["level"].toDouble(1.0);
     updateFFmpegFlags();
 }
+
+void FFAsuperpass::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

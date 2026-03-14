@@ -51,6 +51,7 @@ public:
     
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
     
     // Mix level: how much of the insert chain to blend back
     double getMixLevel() const { return mixLevel; }

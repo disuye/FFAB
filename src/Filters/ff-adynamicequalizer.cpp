@@ -609,3 +609,8 @@ void FFAdynamicequalizer::fromJSON(const QJsonObject& json) {
     m_autoThreshold = json["autoThreshold"].toInt(1);
     updateFFmpegFlags();
 }
+
+void FFAdynamicequalizer::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

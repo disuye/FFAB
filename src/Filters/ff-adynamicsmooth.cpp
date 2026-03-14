@@ -191,3 +191,8 @@ void FFAdynamicsmooth::fromJSON(const QJsonObject& json) {
     m_basefreq = json["basefreq"].toDouble(22050.0);
     updateFFmpegFlags();
 }
+
+void FFAdynamicsmooth::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

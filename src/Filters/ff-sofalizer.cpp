@@ -424,3 +424,8 @@ void FFSofalizer::fromJSON(const QJsonObject& json) {
     m_minphase = json["minphase"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFSofalizer::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

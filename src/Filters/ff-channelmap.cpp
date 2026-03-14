@@ -194,3 +194,8 @@ void FFChannelmap::fromJSON(const QJsonObject& json) {
     m_channelLayout = json["channelLayout"].toString("stereo");
     updateFFmpegFlags();
 }
+
+void FFChannelmap::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

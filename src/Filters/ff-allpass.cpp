@@ -329,3 +329,8 @@ void FFAllpass::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFAllpass::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

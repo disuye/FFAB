@@ -45,6 +45,7 @@ public:
     
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     // Get the input index this filter represents ([1:a], [2:a], etc.)
     int getInputIndex() const { return inputIndex; }

@@ -37,6 +37,7 @@ public:
 
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     enum class DisplayMode { COMBINED = 0, SEPARATE };
     enum class ColorScheme {

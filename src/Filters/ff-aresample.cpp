@@ -65,3 +65,8 @@ void FFAresample::fromJSON(const QJsonObject& json) {
     m_sampleRate = json["sample_rate"].toInt(44100);
     updateFFmpegFlags();
 }
+
+void FFAresample::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

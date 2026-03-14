@@ -131,3 +131,8 @@ void FFChannelsplit::fromJSON(const QJsonObject& json) {
     m_channels = json["channels"].toString("all");
     updateFFmpegFlags();
 }
+
+void FFChannelsplit::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

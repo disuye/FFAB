@@ -167,3 +167,8 @@ void FFVibrato::fromJSON(const QJsonObject& json) {
     m_depth = json["depth"].toDouble(0.5);
     updateFFmpegFlags();
 }
+
+void FFVibrato::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

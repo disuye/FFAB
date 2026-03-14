@@ -107,3 +107,8 @@ void FFAsisdr::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     updateFFmpegFlags();
 }
+
+void FFAsisdr::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

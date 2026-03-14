@@ -104,3 +104,8 @@ void FFAsdr::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     updateFFmpegFlags();
 }
+
+void FFAsdr::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

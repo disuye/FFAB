@@ -30,6 +30,7 @@ public:
 
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
     
     // Identifies this as a sink filter (no output)
     bool isSinkFilter() const { return true; }

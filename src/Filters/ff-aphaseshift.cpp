@@ -199,3 +199,8 @@ void FFAphaseshift::fromJSON(const QJsonObject& json) {
     m_order = json["order"].toInt(8);
     updateFFmpegFlags();
 }
+
+void FFAphaseshift::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

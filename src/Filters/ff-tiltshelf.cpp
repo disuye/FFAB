@@ -378,3 +378,8 @@ void FFTiltshelf::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFTiltshelf::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

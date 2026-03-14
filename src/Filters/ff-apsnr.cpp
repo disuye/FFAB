@@ -94,3 +94,8 @@ void FFApsnr::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     updateFFmpegFlags();
 }
+
+void FFApsnr::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

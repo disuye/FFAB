@@ -195,3 +195,8 @@ void FFDialoguenhance::fromJSON(const QJsonObject& json) {
     m_voice = json["voice"].toDouble(2.0);
     updateFFmpegFlags();
 }
+
+void FFDialoguenhance::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

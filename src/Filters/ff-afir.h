@@ -42,6 +42,7 @@ public:
     
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
     
     // Track which sidechain input this filter uses
     int getSidechainInputIndex() const { return sidechainInputIndex; }

@@ -251,3 +251,8 @@ void FFAfade::fromJSON(const QJsonObject& json) {
     m_unity = json["unity"].toDouble(1.0);
     updateFFmpegFlags();
 }
+
+void FFAfade::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

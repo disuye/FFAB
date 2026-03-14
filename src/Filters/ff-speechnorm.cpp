@@ -378,3 +378,8 @@ void FFSpeechnorm::fromJSON(const QJsonObject& json) {
     m_invert = json["invert"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFSpeechnorm::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -343,3 +343,8 @@ void FFAdeclick::fromJSON(const QJsonObject& json) {
     m_method = json["method"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFAdeclick::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

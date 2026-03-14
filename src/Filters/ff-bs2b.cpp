@@ -217,3 +217,8 @@ void FFBs2b::fromJSON(const QJsonObject& json) {
     m_feed = json["feed"].toInt(45);
     updateFFmpegFlags();
 }
+
+void FFBs2b::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

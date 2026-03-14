@@ -258,3 +258,8 @@ void FFChorus::fromJSON(const QJsonObject& json) {
     m_depths = json["depths"].toString("");
     updateFFmpegFlags();
 }
+
+void FFChorus::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

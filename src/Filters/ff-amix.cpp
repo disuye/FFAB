@@ -187,3 +187,8 @@ void FFAmix::fromJSON(const QJsonObject& json) {
     if (weightsEdit) weightsEdit->setText(weights);
     if (normalizeCheckBox) normalizeCheckBox->setChecked(normalize);
 }
+
+void FFAmix::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

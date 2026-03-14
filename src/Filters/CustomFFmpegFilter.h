@@ -22,6 +22,7 @@ public:
     
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     void setCustomCommand(const QString& cmd) { customCommand = cmd; }
     QString getCustomCommand() const { return customCommand; }

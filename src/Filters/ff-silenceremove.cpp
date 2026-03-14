@@ -441,3 +441,8 @@ void FFSilenceremove::fromJSON(const QJsonObject& json) {
     m_timestamp = json["timestamp"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFSilenceremove::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -273,3 +273,8 @@ void FFBiquad::fromJSON(const QJsonObject& json) {
     m_transform = json["transform"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFBiquad::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -294,3 +294,7 @@ void FFAsoftclip::fromJSON(const QJsonObject& json) {
     m_oversample = json["oversample"].toInt(1);
     updateFFmpegFlags();
 }
+void FFAsoftclip::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

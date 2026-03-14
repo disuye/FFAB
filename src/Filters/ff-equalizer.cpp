@@ -358,3 +358,8 @@ void FFEqualizer::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFEqualizer::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -183,3 +183,8 @@ void FFAmerge::fromJSON(const QJsonObject& json) {
         presetCombo->setCurrentIndex(presetIndex);
     }
 }
+
+void FFAmerge::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -277,3 +277,8 @@ void FFAfftdn::fromJSON(const QJsonObject& json) {
     m_outputMode = json["output_mode"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFAfftdn::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

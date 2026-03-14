@@ -343,3 +343,7 @@ void FFAfir::fromJSON(const QJsonObject& json) {
         mixCurveComboBox->setEnabled(useAmix);
     }
 }
+void FFAfir::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

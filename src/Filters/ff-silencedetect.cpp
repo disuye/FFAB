@@ -221,3 +221,8 @@ void FFSilencedetect::fromJSON(const QJsonObject& json) {
     m_mono = json["mono"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFSilencedetect::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

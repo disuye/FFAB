@@ -345,3 +345,8 @@ void FFAphaser::fromJSON(const QJsonObject& json) {
     m_type = json["modulation_type"].toInt(1);
     updateFFmpegFlags();
 }
+
+void FFAphaser::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

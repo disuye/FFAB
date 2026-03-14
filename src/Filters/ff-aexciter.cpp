@@ -411,3 +411,8 @@ void FFAexciter::fromJSON(const QJsonObject& json) {
     m_listen = json["listen"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFAexciter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

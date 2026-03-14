@@ -127,3 +127,8 @@ void FFAdecorrelate::fromJSON(const QJsonObject& json) {
     m_seed = json["seed"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFAdecorrelate::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

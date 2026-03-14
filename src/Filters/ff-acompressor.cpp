@@ -599,3 +599,7 @@ void FFAcompressor::fromJSON(const QJsonObject& json) {
     m_mix = json["mix"].toDouble(1.0);
     updateFFmpegFlags();
 }
+void FFAcompressor::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

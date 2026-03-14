@@ -119,3 +119,8 @@ void FFAformat::fromJSON(const QJsonObject& json) {
     m_customRate = json["custom_rate"].toInt(44100);
     updateFFmpegFlags();
 }
+
+void FFAformat::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

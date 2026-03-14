@@ -225,3 +225,8 @@ void ChannelEqFilter::fromJSON(const QJsonObject& json) {
         eqWidget->update();
     }
 }
+
+void ChannelEqFilter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

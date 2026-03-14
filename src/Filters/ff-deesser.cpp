@@ -231,3 +231,8 @@ void FFDeesser::fromJSON(const QJsonObject& json) {
     m_outputMode = json["outputMode"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFDeesser::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

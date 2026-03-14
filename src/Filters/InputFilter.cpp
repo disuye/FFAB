@@ -47,3 +47,8 @@ void InputFilter::toJSON(QJsonObject& json) const {
 void InputFilter::fromJSON(const QJsonObject& json) {
     // Nothing to load anymore
 }
+
+void InputFilter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

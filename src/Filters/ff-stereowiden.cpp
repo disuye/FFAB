@@ -244,3 +244,8 @@ void FFStereowiden::fromJSON(const QJsonObject& json) {
     m_drymix = json["drymix"].toDouble(0.8);
     updateFFmpegFlags();
 }
+
+void FFStereowiden::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

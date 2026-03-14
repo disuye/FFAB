@@ -322,3 +322,8 @@ void FFLoudnorm::fromJSON(const QJsonObject& json) {
     m_printFormat = json["printFormat"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFLoudnorm::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

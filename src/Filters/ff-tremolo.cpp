@@ -167,3 +167,8 @@ void FFTremolo::fromJSON(const QJsonObject& json) {
     m_depth = json["depth"].toDouble(0.5);
     updateFFmpegFlags();
 }
+
+void FFTremolo::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

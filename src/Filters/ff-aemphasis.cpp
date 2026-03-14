@@ -229,3 +229,8 @@ void FFAemphasis::fromJSON(const QJsonObject& json) {
     m_type = json["emphasis_type"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFAemphasis::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

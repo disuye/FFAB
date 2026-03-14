@@ -73,3 +73,8 @@ void FFVolumedetect::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     updateFFmpegFlags();
 }
+
+void FFVolumedetect::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

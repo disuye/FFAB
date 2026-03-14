@@ -184,3 +184,8 @@ void FFAxcorrelate::fromJSON(const QJsonObject& json) {
     m_algo = json["algo"].toInt(2);
     updateFFmpegFlags();
 }
+
+void FFAxcorrelate::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

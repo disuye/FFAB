@@ -111,3 +111,8 @@ void FFCrystalizer::fromJSON(const QJsonObject& json) {
     m_clip = json["clip"].toBool(true);
     updateFFmpegFlags();
 }
+
+void FFCrystalizer::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

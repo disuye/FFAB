@@ -552,3 +552,8 @@ void FFApulsator::fromJSON(const QJsonObject& json) {
     m_hz = json["hz"].toDouble(2.0);
     updateFFmpegFlags();
 }
+
+void FFApulsator::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

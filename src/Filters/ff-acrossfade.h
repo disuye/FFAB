@@ -27,6 +27,7 @@ public:
     
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     // Multi-input filter support
     void setSidechainInputIndex(int index) { m_sidechainInputIndex = index; }

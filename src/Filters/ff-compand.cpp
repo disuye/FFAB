@@ -453,3 +453,8 @@ void FFCompand::fromJSON(const QJsonObject& json) {
     updateFFmpegFlags();
     if (curveWidget) curveWidget->update();
 }
+
+void FFCompand::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

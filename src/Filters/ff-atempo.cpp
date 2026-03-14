@@ -116,3 +116,8 @@ void FFAtempo::fromJSON(const QJsonObject& json) {
     m_tempo = json["tempo"].toDouble(1.0);
     updateFFmpegFlags();
 }
+
+void FFAtempo::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

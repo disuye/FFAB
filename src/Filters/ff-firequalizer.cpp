@@ -383,3 +383,8 @@ void FFFirequalizer::fromJSON(const QJsonObject& json) {
     m_minPhase = json["min_phase"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFFirequalizer::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

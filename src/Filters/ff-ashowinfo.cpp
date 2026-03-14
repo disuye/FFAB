@@ -96,3 +96,8 @@ void FFAshowinfo::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     updateFFmpegFlags();
 }
+
+void FFAshowinfo::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

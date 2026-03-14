@@ -408,3 +408,8 @@ void FFAnequalizer::fromJSON(const QJsonObject& json) {
 
     updateFFmpegFlags();
 }
+
+void FFAnequalizer::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

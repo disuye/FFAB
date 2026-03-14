@@ -294,3 +294,8 @@ void FFCrossfeed::fromJSON(const QJsonObject& json) {
     m_levelOut = json["level_out"].toDouble(1.0);
     updateFFmpegFlags();
 }
+
+void FFCrossfeed::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

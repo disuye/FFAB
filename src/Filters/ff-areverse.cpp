@@ -38,3 +38,8 @@ void FFAreverse::toJSON(QJsonObject& json) const {
 void FFAreverse::fromJSON(const QJsonObject& json) {
     updateFFmpegFlags();
 }
+
+void FFAreverse::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

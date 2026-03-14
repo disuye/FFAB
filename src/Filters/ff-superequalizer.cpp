@@ -208,3 +208,7 @@ void FFSuperequalizer::fromJSON(const QJsonObject& json) {
     }
     updateFFmpegFlags();
 }
+void FFSuperequalizer::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

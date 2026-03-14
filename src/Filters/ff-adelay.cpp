@@ -85,3 +85,8 @@ void FFAdelay::fromJSON(const QJsonObject& json) {
     m_all = json["all"].toBool(false);
     updateFFmpegFlags();
 }
+
+void FFAdelay::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

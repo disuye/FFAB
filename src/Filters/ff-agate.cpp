@@ -456,3 +456,8 @@ void FFAgate::fromJSON(const QJsonObject& json) {
     m_levelSc = json["level_sc"].toDouble(1.0);
     updateFFmpegFlags();
 }
+
+void FFAgate::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -742,3 +742,8 @@ void FFMcompand::fromJSON(const QJsonObject& json) {
         rebuildUI();
     }
 }
+
+void FFMcompand::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

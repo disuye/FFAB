@@ -62,3 +62,8 @@ void FFAsetpts::fromJSON(const QJsonObject& json) {
     m_expr = json["expr"].toString("PTS");
     updateFFmpegFlags();
 }
+
+void FFAsetpts::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

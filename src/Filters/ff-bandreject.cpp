@@ -309,3 +309,8 @@ void FFBandreject::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFBandreject::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

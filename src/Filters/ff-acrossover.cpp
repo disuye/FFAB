@@ -245,3 +245,8 @@ void FFAcrossover::fromJSON(const QJsonObject& json) {
     m_precision = json["precision"].toInt(0);
     updateFFmpegFlags();
 }
+
+void FFAcrossover::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

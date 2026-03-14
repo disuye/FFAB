@@ -37,6 +37,7 @@ public:
 
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     enum class ScaleMode { LINEAR = 0, SQRT, LOG };
     enum class DrawMode { FULL = 0, SCALE };

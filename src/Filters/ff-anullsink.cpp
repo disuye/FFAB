@@ -62,3 +62,8 @@ void FFAnullsink::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     // No parameters to load
 }
+
+void FFAnullsink::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

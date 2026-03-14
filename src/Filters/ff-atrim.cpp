@@ -179,3 +179,8 @@ void FFAtrim::fromJSON(const QJsonObject& json) {
     m_durationUnit = json["duration_unit"].toString("s");
     updateFFmpegFlags();
 }
+
+void FFAtrim::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

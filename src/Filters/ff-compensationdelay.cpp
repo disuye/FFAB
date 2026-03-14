@@ -316,3 +316,8 @@ void FFCompensationdelay::fromJSON(const QJsonObject& json) {
     m_temp = json["temp"].toInt(20);
     updateFFmpegFlags();
 }
+
+void FFCompensationdelay::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

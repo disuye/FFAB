@@ -27,6 +27,7 @@ public:
 
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     // Public API (used by legacy code paths / direct callers)
     const QList<CompandPoint>& transferPoints() const { return m_bandData.points; }

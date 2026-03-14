@@ -144,3 +144,8 @@ void FFVirtualbass::fromJSON(const QJsonObject& json) {
     m_strength = json["strength"].toDouble(3.0);
     updateFFmpegFlags();
 }
+
+void FFVirtualbass::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

@@ -197,3 +197,8 @@ void AudioInputFilter::fromJSON(const QJsonObject& json) {
     // This prevents duplicate deserialization and allows PresetManager to handle
     // missing files with proper reporting
 }
+
+void AudioInputFilter::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

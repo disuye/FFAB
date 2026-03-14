@@ -144,3 +144,8 @@ void FFDcshift::fromJSON(const QJsonObject& json) {
     m_limiterGain = json["limiter_gain"].toDouble(0.0);
     updateFFmpegFlags();
 }
+
+void FFDcshift::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

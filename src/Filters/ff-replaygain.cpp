@@ -93,3 +93,8 @@ void FFReplaygain::fromJSON(const QJsonObject& json) {
     Q_UNUSED(json);
     updateFFmpegFlags();
 }
+
+void FFReplaygain::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

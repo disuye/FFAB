@@ -26,6 +26,7 @@ public:
     
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
     void setDecibels(double db) { decibels = db; updateFFmpegFlags(); }
     double getDecibels() const { return decibels; }

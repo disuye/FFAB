@@ -194,3 +194,8 @@ void FFAloop::fromJSON(const QJsonObject& json) {
     m_timeUnit = json["time_unit"].toString("s");
     updateFFmpegFlags();
 }
+
+void FFAloop::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

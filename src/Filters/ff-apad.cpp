@@ -185,3 +185,7 @@ void FFApad::fromJSON(const QJsonObject& json) {
     m_unit = json["unit"].toString("s");
     updateFFmpegFlags();
 }
+void FFApad::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

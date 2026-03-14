@@ -559,3 +559,7 @@ void FFSidechaincompress::fromJSON(const QJsonObject& json) {
         if (idx >= 0) detectionCombo->setCurrentIndex(idx);
     }
 }
+void FFSidechaincompress::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}

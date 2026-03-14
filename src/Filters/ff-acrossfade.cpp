@@ -211,3 +211,8 @@ void FFAcrossfade::fromJSON(const QJsonObject& json) {
     m_sidechainInputIndex = json["sidechain_input_index"].toInt(-1);
     updateFFmpegFlags();
 }
+
+void FFAcrossfade::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}
