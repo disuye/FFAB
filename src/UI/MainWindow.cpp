@@ -10,6 +10,7 @@
 #include "RegionPreviewWindow.h"
 #include "PresetManager.h"
 #include "FilterPresetBar.h"
+#include "FilterPresetManager.h"
 #include "Utils/KeyCommands.h"
 #include "Core/FilterChain.h"
 #include "Core/AppConfig.h"
@@ -70,6 +71,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     commandViewWindow = new CommandViewWindow(this);
     previewGenerator = new PreviewGenerator(this);
     presetManager = new PresetManager(this);
+    filterPresetManager = new FilterPresetManager(this);
     regionPreviewWindow = new RegionPreviewWindow(this);
     logViewWindow = new LogViewWindow(this);
     m_updateChecker = new UpdateChecker(this);
@@ -243,29 +245,83 @@ void MainWindow::setupUI() {
     filterPresetBar->setVisible(false);
     rightLayout->addWidget(filterPresetBar, 0);
 
-    // Preset bar signals (dumb stubs — log only until save/load is wired)
+    // Preset bar signals — wired to FilterPresetManager
     connect(filterPresetBar, &FilterPresetBar::previousRequested, this, [this]() {
-        qDebug() << "[PresetBar] Previous requested for filter type:" << filterPresetBar->filterType();
+        if (!m_currentFilter) return;
+        QStringList presets = FilterPresetManager::presetsForType(m_currentFilter->filterType());
+        if (presets.size() < 2) return;
+        int idx = presets.indexOf(filterPresetBar->presetName());
+        int prev = (idx <= 0) ? presets.size() - 1 : idx - 1;
+        if (filterPresetManager->loadPreset(m_currentFilter.get(), presets[prev])) {
+            filterPresetBar->setPresetName(presets[prev]);
+            m_currentFilter->setLoadedPresetName(presets[prev]);
+            rebuildFilterParamsWidget();
+        }
     });
     connect(filterPresetBar, &FilterPresetBar::nextRequested, this, [this]() {
-        qDebug() << "[PresetBar] Next requested for filter type:" << filterPresetBar->filterType();
+        if (!m_currentFilter) return;
+        QStringList presets = FilterPresetManager::presetsForType(m_currentFilter->filterType());
+        if (presets.size() < 2) return;
+        int idx = presets.indexOf(filterPresetBar->presetName());
+        int next = (idx < 0 || idx >= presets.size() - 1) ? 0 : idx + 1;
+        if (filterPresetManager->loadPreset(m_currentFilter.get(), presets[next])) {
+            filterPresetBar->setPresetName(presets[next]);
+            m_currentFilter->setLoadedPresetName(presets[next]);
+            rebuildFilterParamsWidget();
+        }
     });
     connect(filterPresetBar, &FilterPresetBar::loadPresetRequested, this, [this]() {
-        qDebug() << "[PresetBar] Load preset requested";
+        if (!m_currentFilter) return;
+        QString dir = FilterPresetManager::presetDirectoryForType(m_currentFilter->filterType());
+        QString filePath = QFileDialog::getOpenFileName(
+            this, "Load Filter Preset", dir,
+            QString("FFAB Filter Presets (*%1)").arg(FilterPresetManager::EXTENSION));
+        if (filePath.isEmpty()) return;
+        QString name = QFileInfo(filePath).completeBaseName();
+        if (filterPresetManager->loadPreset(m_currentFilter.get(), name)) {
+            filterPresetBar->setPresetName(name);
+            m_currentFilter->setLoadedPresetName(name);
+            refreshFilterPresetBar();
+            rebuildFilterParamsWidget();
+        }
     });
     connect(filterPresetBar, &FilterPresetBar::savePresetRequested, this, [this]() {
-        qDebug() << "[PresetBar] Save preset requested";
+        if (!m_currentFilter) return;
+        // If a preset is already loaded, overwrite it; otherwise behave like Save As
+        QString currentName = filterPresetBar->presetName();
+        if (currentName.isEmpty()) {
+            emit filterPresetBar->savePresetAsRequested();
+            return;
+        }
+        if (filterPresetManager->savePreset(m_currentFilter.get(), currentName)) {
+            refreshFilterPresetBar();
+        }
     });
     connect(filterPresetBar, &FilterPresetBar::savePresetAsRequested, this, [this]() {
-        qDebug() << "[PresetBar] Save preset as requested";
+        if (!m_currentFilter) return;
+        QString dir = FilterPresetManager::presetDirectoryForType(m_currentFilter->filterType());
+        QString filePath = QFileDialog::getSaveFileName(
+            this, "Save Filter Preset", dir,
+            QString("FFAB Filter Presets (*%1)").arg(FilterPresetManager::EXTENSION));
+        if (filePath.isEmpty()) return;
+        QString name = QFileInfo(filePath).completeBaseName();
+        if (filterPresetManager->savePreset(m_currentFilter.get(), name)) {
+            filterPresetBar->setPresetName(name);
+            m_currentFilter->setLoadedPresetName(name);
+            refreshFilterPresetBar();
+        }
     });
     connect(filterPresetBar, &FilterPresetBar::presetSelected, this, [this](const QString& name) {
-        qDebug() << "[PresetBar] Preset selected:" << name;
-        filterPresetBar->setPresetName(name);
+        if (!m_currentFilter) return;
+        if (filterPresetManager->loadPreset(m_currentFilter.get(), name)) {
+            filterPresetBar->setPresetName(name);
+            m_currentFilter->setLoadedPresetName(name);
+            rebuildFilterParamsWidget();
+        }
     });
     connect(filterPresetBar, &FilterPresetBar::toggleBarRequested, this, [this]() {
         if (m_filterPresetsAction) {
-            m_filterPresetsAction->toggle();  // flips the View menu checkmark too
+            m_filterPresetsAction->toggle();
         }
     });
 
@@ -873,6 +929,7 @@ void MainWindow::onFilterSelected(int position) {
         filterIdBadge->setVisible(false);
         stackedWidget->setCurrentIndex(0);
         docLinks->setText("");
+        m_currentFilter.reset();
         if (filterPresetBar) filterPresetBar->setVisible(false);
     } else if (filter->filterType() == "output") {
         titleLabel->setText("Output Parameters");
@@ -880,6 +937,7 @@ void MainWindow::onFilterSelected(int position) {
         stackedWidget->setCurrentIndex(1);  // Use filterParamsPanel, not outputSettingsPanel
         docLinks->setText("");
         filterParamsPanel->setFilterWidget(filter->getParametersWidget());
+        m_currentFilter.reset();
         if (filterPresetBar) filterPresetBar->setVisible(false);
         // Connect output folder changed signal
         if (auto* outputFilter = dynamic_cast<OutputFilter*>(filter.get())) {
@@ -913,18 +971,17 @@ void MainWindow::onFilterSelected(int position) {
         stackedWidget->setCurrentIndex(1);
         filterParamsPanel->setFilterWidget(filter->getParametersWidget());
         
-        // Update preset bar
+        // Update preset bar and track current filter
+        m_currentFilter = filter;
         if (filterPresetBar) {
             filterPresetBar->setFilterType(filter->filterType());
-            filterPresetBar->clearPreset();
-            // Dummy presets for UI testing — replace with folder scan later
-            filterPresetBar->setPresetList({
-                "Warm Tape Saturation",
-                "Kick Drum 005",
-                "Gentle High Shelf",
-                "Radio EQ",
-                "Telephone Effect"
-            });
+            QString loaded = filter->loadedPresetName();
+            if (loaded.isEmpty()) {
+                filterPresetBar->clearPreset();
+            } else {
+                filterPresetBar->setPresetName(loaded);
+            }
+            refreshFilterPresetBar();
             filterPresetBar->setVisible(
                 m_filterPresetsAction && m_filterPresetsAction->isChecked());
         }
@@ -972,18 +1029,17 @@ void MainWindow::onSubChainFilterSelected(int filterId) {
     stackedWidget->setCurrentIndex(1);
     filterParamsPanel->setFilterWidget(filter->getParametersWidget());
     
-    // Update preset bar
+    // Update preset bar and track current filter
+    m_currentFilter = filter;
     if (filterPresetBar) {
         filterPresetBar->setFilterType(filter->filterType());
-        filterPresetBar->clearPreset();
-        // Dummy presets for UI testing — replace with folder scan later
-        filterPresetBar->setPresetList({
-            "Warm Tape Saturation",
-            "Kick Drum 005",
-            "Gentle High Shelf",
-            "Radio EQ",
-            "Telephone Effect"
-        });
+        QString loaded = filter->loadedPresetName();
+            if (loaded.isEmpty()) {
+                filterPresetBar->clearPreset();
+            } else {
+                filterPresetBar->setPresetName(loaded);
+            }
+        refreshFilterPresetBar();
         filterPresetBar->setVisible(
             m_filterPresetsAction && m_filterPresetsAction->isChecked());
     }
@@ -2596,4 +2652,29 @@ QWidget* MainWindow::showLicenseWindow(const QString& title, const QString& reso
     win->raise();
     win->activateWindow();
     return win;
+}
+
+// ========== FILTER PRESET HELPERS ==========
+
+void MainWindow::refreshFilterPresetBar() {
+    if (!filterPresetBar || !m_currentFilter) return;
+    QStringList presets = FilterPresetManager::presetsForType(m_currentFilter->filterType());
+    filterPresetBar->setPresetList(presets);
+}
+
+void MainWindow::rebuildFilterParamsWidget() {
+    if (!m_currentFilter) return;
+
+    // Remove the stale widget from the params panel
+    filterParamsPanel->setFilterWidget(nullptr);
+
+    // Tell the filter to destroy its cached widget
+    // (so getParametersWidget() rebuilds from updated member vars)
+    m_currentFilter->resetParametersWidget();
+
+    // Rebuild and re-display
+    filterParamsPanel->setFilterWidget(m_currentFilter->getParametersWidget());
+
+    // Update FFmpeg command to reflect new parameter values
+    onChainModified();
 }

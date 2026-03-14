@@ -24,9 +24,10 @@ public:
     QString filterType() const override { return "ff-dynaudnorm"; }
     QWidget* getParametersWidget() override;
     QString buildFFmpegFlags() const override;
-    
+
     void toJSON(QJsonObject& json) const override;
     void fromJSON(const QJsonObject& json) override;
+    void resetParametersWidget() override;
 
 private:
     void updateFFmpegFlags();

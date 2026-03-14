@@ -17,6 +17,7 @@
 #include "Core/JobListBuilder.h"
 #include "FFmpegSetupDialog.h"
 #include "FilterPresetBar.h"
+#include "FilterPresetManager.h"
 
 
 // Forward declarations
@@ -120,7 +121,13 @@ private:
     
     // Filter Preset UI
     FilterPresetBar* filterPresetBar = nullptr;
+    FilterPresetManager* filterPresetManager = nullptr;
     QAction* m_filterPresetsAction = nullptr;
+    std::shared_ptr<BaseFilter> m_currentFilter;  // currently selected filter (for preset operations)
+    
+    // Filter preset helpers
+    void refreshFilterPresetBar();
+    void rebuildFilterParamsWidget();
     
     // UI Components
     FilterChainWidget* filterChainWidget;

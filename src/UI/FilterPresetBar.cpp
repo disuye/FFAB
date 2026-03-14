@@ -30,9 +30,9 @@ void FilterPresetBar::setupUI() {
 
     // Save
     m_savePresetButton = new QPushButton(this);
-    m_savePresetButton->setText("Save");
+    m_savePresetButton->setText("Save As...");
     m_savePresetButton->setToolTip("Save filter preset");
-    connect(m_savePresetButton, &QPushButton::clicked, this, &FilterPresetBar::savePresetRequested);
+    connect(m_savePresetButton, &QPushButton::clicked, this, &FilterPresetBar::savePresetAsRequested);
 
     // Preset name label (centered, stretches)
     m_nameLabel = new QLabel(this);

@@ -47,6 +47,18 @@ public:
     virtual void toJSON(QJsonObject& json) const = 0;
     virtual void fromJSON(const QJsonObject& json) = 0;
 
+    
+    // Destroy the cached parameters widget so getParametersWidget() rebuilds it.
+    // Used by the per-filter preset system: after fromJSON() updates member vars,
+    // call this to force the UI to regenerate from the new values.
+    // Default implementation does nothing; subclasses with a parametersWidget
+    // pointer should override to delete it and set the pointer to nullptr.
+    virtual void resetParametersWidget() {}
+
+    // Filter Presets...
+    QString loadedPresetName() const { return m_loadedPresetName; }
+    void setLoadedPresetName(const QString& name) { m_loadedPresetName = name; }
+
     Position getPosition() const { return position; }
     virtual bool isAnalysisTwoInputFilter() const { return false; }
     
@@ -85,4 +97,5 @@ protected:
     int m_filterId = -1;  // -1 = unassigned
     bool m_useCustomOutputStream = false;  // false = normal chain, true = branch to custom stream
     bool m_effectivelyMuted = false;       // stamped before each build by FilterChainWidget
+    QString m_loadedPresetName; // filter preset name persistence in UI
 };

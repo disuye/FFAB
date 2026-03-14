@@ -366,6 +366,8 @@ add_executable(FFAB
     src/UI/FFmpegSetupDialog.cpp
     src/UI/FilterPresetBar.h
     src/UI/FilterPresetBar.cpp
+    src/UI/FilterPresetManager.h
+    src/UI/FilterPresetManager.cpp    
     
     # Utils
     src/Utils/KeyCommands.h

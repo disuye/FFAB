@@ -559,3 +559,8 @@ void FFDynaudnorm::fromJSON(const QJsonObject& json) {
     m_curve = json["curve"].toString("");
     updateFFmpegFlags();
 }
+
+void FFDynaudnorm::resetParametersWidget() {
+    delete parametersWidget;
+    parametersWidget = nullptr;
+}
