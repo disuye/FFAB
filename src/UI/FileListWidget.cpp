@@ -360,6 +360,7 @@ void FileListWidget::populateSingleRow(int i) {
     auto checkItem = new QTableWidgetItem(file.enabled ? "1" : "0");
     checkItem->setFlags(checkItem->flags() & ~Qt::ItemIsEditable);
     checkItem->setForeground(QBrush(Qt::transparent));
+    checkItem->setTextAlignment(Qt::AlignCenter); // transparent text not always handled by OS, align hides 1/0 behind check box
     tableWidget->setItem(i, 0, checkItem);
 
     // Filename
