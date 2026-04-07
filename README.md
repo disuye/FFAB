@@ -7,7 +7,7 @@ There are two large updates waiting for community green-light:
 - Node Graph UI: Existing DAG code can handle it, the UI 'just' needs to be built.
 - Video Filters: Also doable... duplicate the Audio Filter code, dream up UIs, then test.
 
-Both are interesting, but (a) I'm an audio guy, and unable to exhaustively test video filters / unqualified to suggest video-centric UIs, and (b) the Node Graph UI is just a different way of visualizing the existing linear filter chain, so feels somewhat redundant (except in the case of ASPLIT parallel routing, in which case nodes & cables would make sense).
+Both are interesting, but (a) I'm an audio guy, and unable to exhaustively test video filters / unqualified to suggest video-centric UIs, and (b) the Node Graph UI is just a different way of visualizing the existing linear filter chain, so feels somewhat redundant (except in the case of ASPLIT parallel routing, where seeing nodes + cables would make sense).
 
 With enough demand, I'll fire up the boilers and build.
 
