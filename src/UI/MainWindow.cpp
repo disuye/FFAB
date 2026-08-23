@@ -1937,7 +1937,7 @@ void MainWindow::onGeneratePreview() {
 
     if (sourceFile.isEmpty()) {
         QMessageBox::warning(this, "No File Available",
-            "Please select or enable a file from the File List to preview.");
+            "Please select or enable at least one file from the INPUT File List to Generate Preview.");
         return;
     }
         

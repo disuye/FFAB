@@ -308,31 +308,65 @@ void AuxOutputFilter::createLosslessSettings(QWidget* container) {
     formLayout->setSpacing(8);
     formLayout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
 
-    // Encoding (only FLAC for now)
+    // Encoding
     auto* encodingLabel = new QLabel("Encoding:");
     encodingLabel->setMaximumWidth(240);
-    auto* encodingCombo = new QComboBox();
-    encodingCombo->addItem("FLAC");
-    encodingCombo->setCurrentIndex(0);
-    encodingCombo->setEnabled(false);
-    formLayout->addRow(encodingLabel, encodingCombo);
+    losslessEncodingCombo = new QComboBox();
+    losslessEncodingCombo->addItem("FLAC");
+    losslessEncodingCombo->addItem("ALAC (Apple Lossless)");
+    losslessEncodingCombo->setCurrentIndex(static_cast<int>(m_losslessFormat));
+    connect(losslessEncodingCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &AuxOutputFilter::onLosslessFormatChanged);
+    formLayout->addRow(encodingLabel, losslessEncodingCombo);
 
-    // Encoding Level
-    auto* levelLabel = new QLabel("Encoding Level:");
-    levelLabel->setMaximumWidth(240);
-    auto* levelCombo = new QComboBox();
-    levelCombo->addItems({
+    // FLAC: Encoding Level
+    flacLevelLabel = new QLabel("Encoding Level:");
+    flacLevelLabel->setMaximumWidth(240);
+    flacLevelCombo = new QComboBox();
+    flacLevelCombo->addItems({
         "0 (fastest)", "1", "2", "3", "4", "5", "6", 
         "7", "8", "9", "10", "11", "12 (smallest)"
     });
-    levelCombo->setCurrentIndex(m_flacLevel);
-    connect(levelCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int idx) {
+    flacLevelCombo->setCurrentIndex(m_flacLevel);
+    connect(flacLevelCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int idx) {
         m_flacLevel = idx;
         onSettingsChanged();
     });
-    formLayout->addRow(levelLabel, levelCombo);
+    formLayout->addRow(flacLevelLabel, flacLevelCombo);
+
+    // ALAC: Bit Depth
+    alacBitDepthLabel = new QLabel("Bit Depth:");
+    alacBitDepthLabel->setMaximumWidth(240);
+    alacBitDepthCombo = new QComboBox();
+    alacBitDepthCombo->addItem("Auto (Source)");
+    alacBitDepthCombo->addItem("16-bit");
+    alacBitDepthCombo->addItem("24-bit");
+    alacBitDepthCombo->setCurrentIndex(static_cast<int>(m_alacBitDepth));
+    alacBitDepthCombo->setToolTip(
+        "Auto passes the source bit depth through (16-bit sources stay 16-bit,\n"
+        "24-bit and higher sources are encoded as 24-bit).\n\n"
+        "Force 16-bit for maximum compatibility with older iOS devices\n"
+        "and CarPlay units.");
+    connect(alacBitDepthCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int idx) {
+        m_alacBitDepth = static_cast<AlacBitDepth>(idx);
+        onSettingsChanged();
+    });
+    formLayout->addRow(alacBitDepthLabel, alacBitDepthCombo);
+
+    losslessFormLayout = formLayout;
+    losslessFormLayout->setRowVisible(flacLevelLabel, m_losslessFormat == LosslessFormat::FLAC);
+    losslessFormLayout->setRowVisible(alacBitDepthLabel, m_losslessFormat == LosslessFormat::ALAC);
 
     layout->addLayout(formLayout);
+}
+
+void AuxOutputFilter::onLosslessFormatChanged(int index) {
+    m_losslessFormat = static_cast<LosslessFormat>(index);
+    if (losslessFormLayout) {
+        losslessFormLayout->setRowVisible(flacLevelLabel, m_losslessFormat == LosslessFormat::FLAC);
+        losslessFormLayout->setRowVisible(alacBitDepthLabel, m_losslessFormat == LosslessFormat::ALAC);
+    }
+    onSettingsChanged();
 }
 
 void AuxOutputFilter::createCompressedSettings(QWidget* container) {
@@ -399,7 +433,7 @@ QString AuxOutputFilter::getFileExtension() const {
             }
             break;
         case Category::Lossless:
-            return "flac";
+            return (m_losslessFormat == LosslessFormat::ALAC) ? "m4a" : "flac";
         case Category::Compressed:
             return (m_compressedFormat == CompressedFormat::MP3) ? "mp3" : "aac";
         case Category::Advanced:
@@ -446,6 +480,23 @@ QString AuxOutputFilter::buildUncompressedFlags() const {
 }
 
 QString AuxOutputFilter::buildLosslessFlags() const {
+    if (m_losslessFormat == LosslessFormat::ALAC) {
+        QString flags = "-c:a alac";
+        switch (m_alacBitDepth) {
+            case AlacBitDepth::Int16:
+                flags += " -sample_fmt s16p";
+                break;
+            case AlacBitDepth::Int24:
+                // ALAC has no 24-bit sample format; 24-bit audio is carried in a 32-bit container.
+                flags += " -sample_fmt s32p";
+                break;
+            case AlacBitDepth::Auto:
+            default:
+                break;  // let FFmpeg negotiate the closest supported format to the source
+        }
+        flags += " -movflags +faststart";
+        return flags;
+    }
     return QString("-c:a flac -compression_level %1").arg(m_flacLevel);
 }
 
@@ -507,6 +558,7 @@ void AuxOutputFilter::toJSON(QJsonObject& json) const {
     // Lossless
     json["losslessFormat"] = static_cast<int>(m_losslessFormat);
     json["flacLevel"] = m_flacLevel;
+    json["alacBitDepth"] = static_cast<int>(m_alacBitDepth);
     
     // Compressed
     json["compressedFormat"] = static_cast<int>(m_compressedFormat);
@@ -535,6 +587,7 @@ void AuxOutputFilter::fromJSON(const QJsonObject& json) {
     // Lossless
     m_losslessFormat = static_cast<LosslessFormat>(json["losslessFormat"].toInt(0));
     m_flacLevel = json["flacLevel"].toInt(5);
+    m_alacBitDepth = static_cast<AlacBitDepth>(json["alacBitDepth"].toInt(0));
     
     // Compressed
     m_compressedFormat = static_cast<CompressedFormat>(json["compressedFormat"].toInt(0));
@@ -578,6 +631,25 @@ void AuxOutputFilter::fromJSON(const QJsonObject& json) {
     }
     if (customFlagsEdit) {
         customFlagsEdit->setText(m_customFlags);
+    }
+    if (losslessEncodingCombo) {
+        losslessEncodingCombo->blockSignals(true);
+        losslessEncodingCombo->setCurrentIndex(static_cast<int>(m_losslessFormat));
+        losslessEncodingCombo->blockSignals(false);
+    }
+    if (flacLevelCombo) {
+        flacLevelCombo->blockSignals(true);
+        flacLevelCombo->setCurrentIndex(m_flacLevel);
+        flacLevelCombo->blockSignals(false);
+    }
+    if (alacBitDepthCombo) {
+        alacBitDepthCombo->blockSignals(true);
+        alacBitDepthCombo->setCurrentIndex(static_cast<int>(m_alacBitDepth));
+        alacBitDepthCombo->blockSignals(false);
+    }
+    if (losslessFormLayout) {
+        losslessFormLayout->setRowVisible(flacLevelLabel, m_losslessFormat == LosslessFormat::FLAC);
+        losslessFormLayout->setRowVisible(alacBitDepthLabel, m_losslessFormat == LosslessFormat::ALAC);
     }
 }
 

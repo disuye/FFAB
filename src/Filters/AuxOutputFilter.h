@@ -11,6 +11,7 @@ class QLineEdit;
 class QLabel;
 class QPushButton;
 class QStackedWidget;
+class QFormLayout;
 
 class AuxOutputFilter : public BaseFilter {
     Q_OBJECT
@@ -34,7 +35,8 @@ public:
     enum class UncompressedFormat { WAV = 0, AIFF, CAF };
     enum class BitDepth { Float32 = 0, Int24, Int16, Int8 };
     enum class AudioFormat { Interleaved = 0, Split };
-    enum class LosslessFormat { FLAC = 0 };
+    enum class LosslessFormat { FLAC = 0, ALAC };
+    enum class AlacBitDepth { Auto = 0, Int16, Int24 };
     enum class CompressedFormat { MP3 = 0, AAC };
 
     QString getOutputFolder() const { return m_outputFolder; }
@@ -59,6 +61,7 @@ private slots:
     void onCategoryChanged(int index);
     void onSettingsChanged();
     void onBrowseOutputFolder();
+    void onLosslessFormatChanged(int index);
 
 private:
     void updateFFmpegFlags();
@@ -81,6 +84,7 @@ private:
     // Lossless settings
     LosslessFormat m_losslessFormat = LosslessFormat::FLAC;
     int m_flacLevel = 5;
+    AlacBitDepth m_alacBitDepth = AlacBitDepth::Auto;
     
     // Compressed settings
     CompressedFormat m_compressedFormat = CompressedFormat::MP3;
@@ -108,6 +112,12 @@ private:
     QWidget* uncompressedPage = nullptr;
     QWidget* losslessPage = nullptr;
     QWidget* compressedPage = nullptr;
+    QComboBox* losslessEncodingCombo = nullptr;
+    QComboBox* flacLevelCombo = nullptr;
+    QComboBox* alacBitDepthCombo = nullptr;
+    QLabel* flacLevelLabel = nullptr;
+    QLabel* alacBitDepthLabel = nullptr;
+    QFormLayout* losslessFormLayout = nullptr;
     QLineEdit* customFlagsEdit = nullptr;
     QCheckBox* useCustomOutputFolderCheck = nullptr;
     QPushButton* browseOutputFolderButton = nullptr;
