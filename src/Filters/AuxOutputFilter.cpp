@@ -494,7 +494,7 @@ QString AuxOutputFilter::buildLosslessFlags() const {
             default:
                 break;  // let FFmpeg negotiate the closest supported format to the source
         }
-        flags += " -movflags +faststart";
+        flags += " -vn -movflags +faststart"; // -vn strips video streams, issue with ALAC + Generate Preview
         return flags;
     }
     return QString("-c:a flac -compression_level %1").arg(m_flacLevel);
