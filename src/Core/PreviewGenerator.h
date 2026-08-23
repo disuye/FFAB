@@ -18,6 +18,10 @@ public:
     
     // Generate preview and waveform
     // waveformSize: resolution for the showwavespic PNG (e.g. "2000x160" or "3000x2000")
+    // outputExtension: container extension matching the OUTPUT filter's actual codec
+    //   (e.g. "wav", "flac", "m4a" for ALAC/AAC, "mp3") — pass outputFilter->getFileExtension().
+    //   Some codecs (ALAC, and likely AAC) cannot be muxed into a .wav container, so this
+    //   must match the real codec being previewed rather than defaulting to wav.
     void generate(
         const QString& sourceFile,
         const QString& outputFormat,
@@ -27,7 +31,8 @@ public:
         const QList<int>& mutedPositions,
         const QStringList& sidechainFiles,
         const QString& ffmpegPath,
-        const QString& waveformSize = "2400x1800"
+        const QString& waveformSize = "2400x1800",
+        const QString& outputExtension = "wav"
     );
     
     void cancel();

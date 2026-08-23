@@ -28,7 +28,8 @@ void PreviewGenerator::generate(
     const QList<int>& mutedPositions,
     const QStringList& sidechainFiles,
     const QString& ffmpegPath,
-    const QString& waveformSize) {
+    const QString& waveformSize,
+    const QString& outputExtension) {
 
     // Kill any in-flight processes before starting a new generation.
     // Without this, a slow filter (e.g. AFIR convolution) can still be writing
@@ -48,8 +49,14 @@ void PreviewGenerator::generate(
     // Create FFAB temp directory if it doesn't exist
     QDir().mkpath(ffabTempDir);
 
+    // The temp file's container MUST match the codec actually being previewed.
+    // Defaulting to .wav breaks any codec that isn't WAV-muxable (ALAC always,
+    // and non-standard cases like AAC) with "Codec X not supported in WAVE format".
+    QString previewExt = outputExtension.trimmed().toLower();
+    if (previewExt.isEmpty()) previewExt = "wav";
+
     m_tempSlot = (m_tempSlot + 1) % kTempSlots;
-    tempAudioPath    = ffabTempDir + QString("/ffab_preview_%1.wav").arg(m_tempSlot);
+    tempAudioPath    = ffabTempDir + QString("/ffab_preview_%1.%2").arg(m_tempSlot).arg(previewExt);
     tempWaveformPath = ffabTempDir + QString("/ffab_waveform_%1.png").arg(m_tempSlot);
 
     emit started();

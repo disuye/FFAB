@@ -1991,7 +1991,8 @@ void MainWindow::onGeneratePreview() {
         mutedPositions,
         sidechainFiles,
         ffmpegPath,
-        waveformSize
+        waveformSize,
+        outputFormat
     );
 }
 
