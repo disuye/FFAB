@@ -356,6 +356,12 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
     } else if (videoPassthrough) {
         // No filter graph but video passthrough — still need video mapping
         command += outputFilter->buildOutputMappingFlags() + " ";
+    } else {
+        // No filter graph, no video passthrough — must restrict to audio only.
+        // Without this, FFmpeg's default stream selection can pull in a real video
+        // track from the source and hand it to the muxer, which strict muxers
+        // (e.g. ALAC's .m4a "ipod" muxer) reject outright.
+        command += "-map 0:a ";
     }
 
     if (!chainEndsWithSink) {
@@ -445,6 +451,12 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
     } else if (videoPassthrough) {
         // No filter graph but video passthrough — still need video mapping
         command += outputFilter->buildOutputMappingFlags() + " ";
+    } else {
+        // No filter graph, no video passthrough — must restrict to audio only.
+        // Without this, FFmpeg's default stream selection can pull in a real video
+        // track from the source and hand it to the muxer, which strict muxers
+        // (e.g. ALAC's .m4a "ipod" muxer) reject outright.
+        command += "-map 0:a ";
     }
 
     if (!chainEndsWithSink) {
@@ -1357,6 +1369,12 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile,
     } else if (videoPassthrough) {
         // No filter graph but video passthrough — still need video mapping
         command += outputFilter->buildOutputMappingFlags() + " ";
+    } else {
+        // No filter graph, no video passthrough — must restrict to audio only.
+        // Without this, FFmpeg's default stream selection can pull in a real video
+        // track from the source and hand it to the muxer, which strict muxers
+        // (e.g. ALAC's .m4a "ipod" muxer) reject outright.
+        command += "-map 0:a ";
     }
 
     if (!chainEndsWithSink) {
@@ -1479,6 +1497,15 @@ QString FilterChain::buildPreviewCommand(const QString& inputFile,
         if (!chainEndsWithSink) {
             command += "-map \"[out]\" ";
         }
+    } else if (!chainEndsWithSink) {
+        // No filter graph — preview is always audio-only (see note above), so without
+        // an explicit map here FFmpeg's default stream selection can still grab a real
+        // video track from the source (e.g. Video Passthrough is on, source is a video
+        // file). That leaks video into what's meant to be an audio-only scratch file
+        // and fails muxers that validate codec tags strictly — including plain "mov"
+        // when no -c:v is given for the auto-selected stream — with "Could not find
+        // tag for codec h264 ... not currently supported in container".
+        command += "-map 0:a ";
     }
     
     // Only add main audio output if chain doesn't end with sink

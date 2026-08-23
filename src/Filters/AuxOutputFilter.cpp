@@ -494,7 +494,14 @@ QString AuxOutputFilter::buildLosslessFlags() const {
             default:
                 break;  // let FFmpeg negotiate the closest supported format to the source
         }
-        flags += " -vn -movflags +faststart"; // -vn strips video streams, issue with ALAC + Generate Preview
+        // NOT CURRENTLY NECESSARY:
+        // Only suppress video when it's not explicitly wanted — Video Passthrough
+        // maps video via -map 0:v earlier in the command, and -vn's interaction with
+        // an explicit -map is FFmpeg-build-dependent, so never combine them.
+        // if (!m_videoPassthrough) {
+        //     flags += " -vn";
+        // }
+        flags += " -movflags +faststart";
         return flags;
     }
     return QString("-c:a flac -compression_level %1").arg(m_flacLevel);
