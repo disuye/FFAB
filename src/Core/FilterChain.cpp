@@ -354,8 +354,12 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
         // [out] is always mapped — normal chains go to outputFile, sink chains to -f null -
         command += "-map \"[out]\" ";
     } else if (videoPassthrough) {
-        // No filter graph but video passthrough — still need video mapping
-        command += outputFilter->buildOutputMappingFlags() + " ";
+        // No filter graph but video passthrough — still need video mapping.
+        // Also need an explicit audio map here: once any -map flag is present
+        // (video/subtitle, added above), FFmpeg disables automatic stream selection
+        // entirely, so without this the audio track is silently dropped — no error,
+        // just a tiny output file with video/subtitles only and no sound.
+        command += outputFilter->buildOutputMappingFlags() + " -map 0:a ";
     } else {
         // No filter graph, no video passthrough — must restrict to audio only.
         // Without this, FFmpeg's default stream selection can pull in a real video
@@ -449,8 +453,12 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile, const QStrin
         // [out] is always mapped — normal chains go to outputFile, sink chains to -f null -
         command += "-map \"[out]\" "; // quotes for View Command, stripped by QProcess
     } else if (videoPassthrough) {
-        // No filter graph but video passthrough — still need video mapping
-        command += outputFilter->buildOutputMappingFlags() + " ";
+        // No filter graph but video passthrough — still need video mapping.
+        // Also need an explicit audio map here: once any -map flag is present
+        // (video/subtitle, added above), FFmpeg disables automatic stream selection
+        // entirely, so without this the audio track is silently dropped — no error,
+        // just a tiny output file with video/subtitles only and no sound.
+        command += outputFilter->buildOutputMappingFlags() + " -map 0:a ";
     } else {
         // No filter graph, no video passthrough — must restrict to audio only.
         // Without this, FFmpeg's default stream selection can pull in a real video
@@ -1367,8 +1375,12 @@ QString FilterChain::buildCompleteCommand(const QString& inputFile,
         // [out] is always mapped — normal chains go to outputFile, sink chains to -f null -
         command += "-map \"[out]\" ";
     } else if (videoPassthrough) {
-        // No filter graph but video passthrough — still need video mapping
-        command += outputFilter->buildOutputMappingFlags() + " ";
+        // No filter graph but video passthrough — still need video mapping.
+        // Also need an explicit audio map here: once any -map flag is present
+        // (video/subtitle, added above), FFmpeg disables automatic stream selection
+        // entirely, so without this the audio track is silently dropped — no error,
+        // just a tiny output file with video/subtitles only and no sound.
+        command += outputFilter->buildOutputMappingFlags() + " -map 0:a ";
     } else {
         // No filter graph, no video passthrough — must restrict to audio only.
         // Without this, FFmpeg's default stream selection can pull in a real video

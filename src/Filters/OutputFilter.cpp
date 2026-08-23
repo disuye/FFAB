@@ -417,7 +417,15 @@ QString OutputFilter::getFileExtension() const {
             }
             return "mov";  // Default video container
         }
-        // For all standard categories, force MOV (best general-purpose video container)
+        // FLAC has no reliable native mapping in MOV's codec tag table — muxing fails
+        // ("Could not find tag for codec h264...") once a real video stream is mapped
+        // alongside it. MKV has first-class, well-supported FLAC muxing, so route FLAC
+        // there specifically. Every other standard-category codec (PCM, ALAC, AAC, MP3)
+        // has confirmed working MOV support, so they keep the general-purpose default.
+        if (m_category == Category::Lossless && m_losslessFormat == LosslessFormat::FLAC) {
+            return "mkv";
+        }
+        // For all other standard categories, force MOV (best general-purpose video container)
         // MP4 would also work; MOV is slightly more flexible with codec support
         return "mov";
     }
