@@ -1191,10 +1191,7 @@ void MainWindow::onAddFolder() {
     }
     
     // Enable process button if we have files and output folder
-    if (inputPanel->getFileListWidget()->getAllFiles().size() > 0 && !currentOutputFolder.isEmpty()) {
-        processButton->setEnabled(true);
-        processButton->setText("Process Files");
-    }
+    updateProcessButtonState();
 }
 
 void MainWindow::onAddFiles() {
@@ -1259,10 +1256,7 @@ void MainWindow::onAddFiles() {
     int added = files.size() - skipped;
     
     // Enable process button if we have output folder
-    if (added > 0 && !currentOutputFolder.isEmpty()) {
-        processButton->setEnabled(true);
-        processButton->setText("Process Files");
-    }
+    updateProcessButtonState();
     
     QString msg = shouldScan ?
         QString("Added %1 files with metadata").arg(added) :
@@ -1324,10 +1318,7 @@ void MainWindow::onFilesDropped(const QStringList& paths) {
     int added = files.size() - skipped;
     
     // Enable process button if we have output folder
-    if (added > 0 && !currentOutputFolder.isEmpty()) {
-        processButton->setEnabled(true);
-        processButton->setText("Process Files");
-    }
+    updateProcessButtonState();
     
     QString msg = shouldScan ?
         QString("Added %1 dropped files with metadata").arg(added) :
@@ -1343,15 +1334,43 @@ void MainWindow::onFilesDropped(const QStringList& paths) {
 
 // ========== OUTPUT SLOTS ==========
 
+void MainWindow::syncOutputFolderFromChain() {
+    // currentOutputFolder is normally kept live by onOutputFolderChanged(), but
+    // that slot is only connected to the chain's OutputFilter::outputFolderChanged
+    // signal lazily — the first time the user clicks the OUTPUT node in the filter
+    // chain widget (see onFilterSelected()). Right after a preset load, that
+    // connection may not exist yet and nothing re-emits the signal, so
+    // currentOutputFolder can be stale. Call this once, explicitly, in that case
+    // to pull the real value straight from the chain's resident OutputFilter.
+    if (filterChain && filterChain->filterCount() > 0) {
+        auto lastFilter = filterChain->getFilter(filterChain->filterCount() - 1);
+        if (auto* outFilter = dynamic_cast<OutputFilter*>(lastFilter.get())) {
+            currentOutputFolder = outFilter->getOutputFolder();
+        }
+    }
+}
+
+void MainWindow::updateProcessButtonState() {
+    bool hasFiles = inputPanel->getFileListWidget()->getAllFiles().size() > 0;
+    bool hasOutputFolder = !currentOutputFolder.isEmpty();
+
+    if (hasFiles && hasOutputFolder) {
+        processButton->setEnabled(true);
+        processButton->setText("Process Files");
+    } else {
+        processButton->setEnabled(false);
+        processButton->setToolTip(hasFiles
+            ? "Define an OUTPUT folder\nbefore clicking Process Files"
+            : "Add file(s) to the INPUT panel\nor define an OUTPUT folder\nbefore clicking Process Files");
+    }
+}
+
 void MainWindow::onOutputFolderChanged(const QString& path) {
     currentOutputFolder = path;
     qDebug() << "Output folder changed to:" << path;
     
     // Enable process button if we have files
-    if (inputPanel->getFileListWidget()->getAllFiles().size() > 0) {
-        processButton->setEnabled(true);
-        processButton->setText("Process Files");  // Update text
-    }
+    updateProcessButtonState();
 }
 
 // ========== FILE LIST SLOTS ==========
@@ -2252,6 +2271,11 @@ void MainWindow::onOpen() {
             // Update chain indices
             filterChain->updateAudioInputIndices();
             filterChain->updateMultiInputFilterIndices();
+            
+            // Re-evaluate Process button now that the chain, output folder,
+            // and file list may have all changed as a result of the load
+            syncOutputFolderFromChain();
+            updateProcessButtonState();
             
             // Hide progress bar
            scanProgressBar->setVisible(false);

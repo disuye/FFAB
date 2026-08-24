@@ -182,6 +182,8 @@ private:
     void checkFFmpegAvailability();
     bool regionWindowIsActive() const;
     QString buildPreviewCommand();  // Build FFmpeg command for preview
+    void syncOutputFolderFromChain();   // Resync currentOutputFolder from the chain's OutputFilter (used after preset load)
+    void updateProcessButtonState();    // Shared Process button enable/disable + tooltip logic
 
     // License file text windows
     QWidget* lgplWindow = nullptr;
