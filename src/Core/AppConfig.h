@@ -4,7 +4,7 @@
 #include <QString>
 
 // Application version
-#define VERSION_STR "1.0.10"
+#define VERSION_STR "1.0.11"
 
 // OS Light/Dark mode mid-grey link color
 #define LINK_COLOR "#808080"

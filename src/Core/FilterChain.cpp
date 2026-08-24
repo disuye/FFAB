@@ -1651,6 +1651,38 @@ bool FilterChain::fromJSON(const QJsonObject& json) {
     for (int i = 0; i < filtersArray.size(); ++i) {
         QJsonObject filterObj = filtersArray[i].toObject();
         QString type = filterObj["type"].toString();
+
+        // INPUT and OUTPUT are fixed singletons that already exist in the chain
+        // (created once in the FilterChain constructor and never removed by the
+        // "remove all middle filters" step above). Apply saved settings directly
+        // to those existing objects rather than building a throwaway instance via
+        // createFilterByType() that would otherwise be populated and discarded,
+        // silently dropping any saved INPUT/OUTPUT configuration on preset load.
+        if (type == "input") {
+            if (inputFilter) {
+                if (filterObj.contains("filter_id")) {
+                    inputFilter->setFilterId(filterObj["filter_id"].toInt());
+                }
+                if (filterObj.contains("use_custom_output")) {
+                    inputFilter->setCustomOutputStream(filterObj["use_custom_output"].toBool());
+                }
+                inputFilter->fromJSON(filterObj);
+            }
+            continue;
+        }
+        if (type == "output") {
+            if (outputFilter) {
+                if (filterObj.contains("filter_id")) {
+                    outputFilter->setFilterId(filterObj["filter_id"].toInt());
+                }
+                if (filterObj.contains("use_custom_output")) {
+                    outputFilter->setCustomOutputStream(filterObj["use_custom_output"].toBool());
+                }
+                outputFilter->fromJSON(filterObj);
+            }
+            continue;
+        }
+
         auto filter = createFilterByType(type);
         
         if (filter) {
@@ -1692,9 +1724,7 @@ bool FilterChain::fromJSON(const QJsonObject& json) {
                 }
             }
             
-            if (type != "input" && type != "output") {
-                addFilter(filter);
-            }
+            addFilter(filter);
         }
     }
     

@@ -200,8 +200,8 @@ void MainWindow::setupUI() {
     processRow->setSpacing(4);
 
     processButton = new QPushButton("Process Files");
-    processButton->setEnabled(false);
-    processButton->setToolTip("Add file(s) to the INPUT panel\nor choose an OUTPUT folder\nbefore clicking Process Files");
+    processButton->setEnabled(false); // normally set FALSE to prevent accidentally overwriting files; TRUE for testing
+    processButton->setToolTip("Add file(s) to the INPUT panel\nor define an OUTPUT folder\nbefore clicking Process Files");
     processRow->addWidget(processButton);
 
     auto batchSettingsBtn = new QPushButton("Batch Settings");
