@@ -201,7 +201,7 @@ void MainWindow::setupUI() {
 
     processButton = new QPushButton("Process Files");
     processButton->setEnabled(false); // normally set FALSE to prevent accidentally overwriting files; TRUE for testing
-    processButton->setToolTip("Add file(s) to the INPUT panel\nor define an OUTPUT folder\nbefore clicking Process Files");
+    processButton->setToolTip("Add or select file(s) in the INPUT > File List\nor define/re-confirm OUTPUT > Output Folder\nbefore clicking the Process Files button");
     processRow->addWidget(processButton);
 
     auto batchSettingsBtn = new QPushButton("Batch Settings");
@@ -1270,7 +1270,7 @@ void MainWindow::onAddFiles() {
 void MainWindow::onClearFiles() {
     inputPanel->getFileListWidget()->clearFiles();
     processButton->setEnabled(false);
-        processButton->setToolTip("Add file(s) to the INPUT panel\nbefore clicking Process Files");
+        processButton->setToolTip("Add or select file(s) in the INPUT > File List\nor define/re-confirm OUTPUT > Output Folder\nbefore clicking the Process Files button");
     statusLabel->setText("File list cleared");
     qDebug() << "File list cleared";
 }
@@ -2383,7 +2383,7 @@ void MainWindow::onNew() {
     
     // Disable process button
     processButton->setEnabled(false);
-    processButton->setToolTip("Add file(s) to the INPUT panel\nbefore clicking Process Files");
+    processButton->setToolTip("Add or select file(s) in the INPUT > File List\nor define/re-confirm OUTPUT > Output Folder\nbefore clicking the Process Files button");
     processButton->setText("Process Files");
 }
 

@@ -211,6 +211,7 @@ void BatchSettingsWindow::setupSettingsView() {
     
     // Process button
     processBatchButton = new QPushButton("Process Batch");
+    processBatchButton->setToolTip("Add or select file(s) in the INPUT > File List\nor define/re-confirm OUTPUT > Output Folder\nbefore clicking the Process Batch button");
     // processBatchButton->setMinimumHeight(36);
     QFont btnFont = processBatchButton->font();
     // btnFont.setBold(true);
